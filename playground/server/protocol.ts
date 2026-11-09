@@ -43,7 +43,7 @@ export function makeAnswer(question: Question, p: number[]): Answer {
 }
 
 /** Validate the exact request identities and numerical contract before actions apply. */
-export function normalizeResponse(raw: unknown, request: DecisionRequest, openrouter = false) {
+export function normalizeResponse(raw: unknown, request: DecisionRequest, hosted = false) {
   const value = object(raw), source = object(value.answers), usage = object(value.usage);
   if (typeof value.model !== 'string' || !value.model) throw new HttpError('Missing resolved model');
   if (canonical(Object.keys(source).sort()) !== canonical(Object.keys(request.questions).sort())) throw new HttpError('Response question identities do not match');
@@ -59,7 +59,7 @@ export function normalizeResponse(raw: unknown, request: DecisionRequest, openro
     if (Math.abs(total - 1) > 1e-6) {
       // Jev publishes each probability to two decimals, so a valid vector can
       // total 0.99 or 1.01. Accept only that bounded wire rounding, with an audit.
-      const roundedJev = openrouter && value.model.startsWith('typesafe/jev-') && reported.every(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8);
+      const roundedJev = hosted && value.model.startsWith('jev-') && reported.every(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-8);
       if (!roundedJev || total <= 0 || Math.abs(total - 1) > keys.length * 0.005 + 1e-6) throw new HttpError('Probabilities must sum to one');
       p = reported.map(v => v / total);
       normalizedProbabilities.push({ question_id: qid, policy: 'jev-two-decimal-rounding-v1', reported_sum: total, reported_probabilities: { ...map }, served_probabilities: Object.fromEntries(keys.map((k, i) => [k, p[i]])) });
@@ -68,7 +68,7 @@ export function normalizeResponse(raw: unknown, request: DecisionRequest, openro
     if (question.type === 'choice') {
       // Preserve vendor tie choices across JSON floating-point representations
       // such as 0.27999999999999997 versus 0.28, without accepting a lower rank.
-      if (typeof a.choice !== 'string' || !keys.includes(a.choice) || Math.max(...reported) - Number(map[a.choice]) > (openrouter ? 1e-12 : 0)) throw new HttpError('Choice must be an argmax');
+      if (typeof a.choice !== 'string' || !keys.includes(a.choice) || Math.max(...reported) - Number(map[a.choice]) > (hosted ? 1e-12 : 0)) throw new HttpError('Choice must be an argmax');
       answers[qid] = { type: 'choice', choice: a.choice, probabilities, confidence };
     } else {
       const legend = Object.fromEntries(keys.map((k, i) => [k, question.criteria[i]]));
@@ -76,7 +76,7 @@ export function normalizeResponse(raw: unknown, request: DecisionRequest, openro
       if (typeof a.score !== 'number' || !Number.isFinite(a.score) || a.score < 0 || a.score > keys.length - 1) throw new HttpError('Invalid Score');
       const expected = sum(p.map((v, i) => i * v));
       if (Math.abs(a.score - expected) > 1e-6) {
-        if (!openrouter) throw new HttpError('Score must equal the probability-weighted level');
+        if (!hosted) throw new HttpError('Score must equal the probability-weighted level');
         derived.push({ question_id: qid, reported_score: a.score, served_score: expected });
       }
       answers[qid] = { type: 'score', score: expected, legend, probabilities, confidence };

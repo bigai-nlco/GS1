@@ -6,7 +6,7 @@ from pathlib import Path
 
 import torch
 
-from .config import DecisionConfig
+from .config import INFERENCE_LIMITS, DecisionConfig
 from .schema import DecisionRequest, candidate_ids, noul_descriptions
 from .util import canonical
 
@@ -86,7 +86,7 @@ class Compiler:
     def __init__(
         self,
         tokenizer,
-        max_context=16384,
+        max_context=INFERENCE_LIMITS["max_context"],
         max_questions=512,
         max_request_tokens=131072,
         decision=None,

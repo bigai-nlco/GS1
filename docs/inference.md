@@ -61,4 +61,4 @@ Graph profiles are local execution receipts and are regenerated after changes to
 
 The compiler checks complete-branch context and total logical tokens before execution. Admission also bounds questions, branches, estimated attention work, logit elements, batching, caches, queue size and graph memory. Over-limit inputs fail explicitly; inference never silently truncates state or filters candidates.
 
-For timing, separate load/capture, compile, engine execution, queue time and HTTP formatting. [Published latency measurements](results.md#latency-and-memory) report their actual boundaries. Short inputs favor launch-overhead reduction; long shapes can exhaust graph residency and fall back to eager execution.
+For timing, separate load/capture, compile, engine execution, queue time and HTTP formatting. [Published latency measurements](../benchmark/results.md#latency-and-memory) report their actual boundaries. Short inputs favor launch-overhead reduction; long shapes can exhaust graph residency and fall back to eager execution.

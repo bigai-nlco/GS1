@@ -7,26 +7,28 @@
 **Fast, Faithful, Frontier.**
 GS1 maps state and runtime-defined questions directly to **Choice**, **Noul**, and **Score** distributions. A native cross-attention decision head reads evidence for the supplied candidates; inference produces zero generated output tokens.
 
-[Models](https://huggingface.co/collections/bigai/gs1) · [Quick start](#quick-start) · [Results](docs/results.md) · [Playground](playground/README.md) · [Architecture](docs/model.md) · [Documentation](docs/README.md)
+[Models](https://huggingface.co/collections/bigai/gs1) · [Quick start](#quick-start) · [Results](benchmark/results.md) · [Playground](playground/README.md) · [Architecture](docs/model.md) · [Documentation](docs/README.md)
 
 ## Highlights
 
-- **Fast — direct decisions, zero decoding.** Score all candidates together and return a complete distribution without generating text. The current 0.8B release reaches **12.51 ms P50** for a complete single-question call; CUDA Graph gives **6.05×** speedup over HF default inference on the measured eight-question fixture.
-- **Faithful — learn and expose the probability used to decide.** CRPO uses the sampled action's actual probability in its Brier reward. At deployment, native probabilities and confidence let software defer uncertain decisions, request more evidence, or choose an abstention option. [Probability and confidence](docs/api.md#confidence)
-- **Frontier — retrieve evidence with a purpose-built head.** Segmented bidirectional attention and carry-preserving Attention Residuals feed a native cross-attention decision head, supporting runtime-defined candidate sets. GS1-4B scores **68.95** in the report's public comparison snapshot, **8.25 points above Jev 1.14**; all four GS1 scales lie on the displayed parameter–performance frontier. [Architecture](docs/model.md)
+- **A decision head that retrieves evidence.** Native multi-head cross-attention queries state evidence for runtime-defined candidates. With context and input representations fixed, head-level probabilities remain identical after a candidate permutation is undone. [Architecture](docs/model.md#backbone-and-evidence-retrieval)
+- **Full comparisons, reusable prefixes.** Causal Gated DeltaNet and segmented bidirectional full attention give candidates their complete comparison context while preserving immutable prefixes for reuse across questions. Carry-preserving **AttnRes** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor.
+- **Fast — native decisions, zero decoding.** One joint distribution directly yields **Choice** candidate probabilities, **Noul** true/false verification and **Score** expected ordinal values. With CUDA Graph, GS1-0.8B reaches **12.51 ms P50** for one short question and **6.05×** speedup over HF default inference for eight short questions. [Measurements](benchmark/latency.md)
+- **Faithful — learn the probability used to act.** CRPO optimizes the sampled action's actual probability with a Brier reward. Native distributions and confidence expose uncertainty so applications can defer a decision, seek evidence or select an explicit abstention option. [Probability and confidence](docs/api.md#confidence)
+- **Frontier — compact models, competitive quality.** GS1-4B scores **68.95** in the report's public comparison snapshot, **8.25 points above Jev 1.14**. All four GS1 scales sit on the displayed parameter–performance frontier. [Results](#models-and-results)
 
 ## Models and results
 
-| Model | Report snapshot · Nov 6 | Complete local suite · Nov 7 | Weights |
-|---|---:|---:|---|
-| **GS1-0.8B** | **56.15** | 56.12 | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
-| **GS1-2B** | **62.22** | 62.22 | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
-| **GS1-4B** | **68.95** | 68.97 | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
-| **GS1-9B** | **70.47** | — | [Hugging Face](https://huggingface.co/bigai/GS1-9B) · checkpoint pending |
+| Model | Decision Index 0.4.1 | Weights |
+|---|---:|---|
+| **GS1-0.8B** | **56.15** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
+| **GS1-2B** | **62.22** | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
+| **GS1-4B** | **68.95** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
+| **GS1-9B** | **70.47** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
 
-Both columns are **public Decision Index scores**, separate from the private Full leaderboard. The figure preserves the technical report's 6 November comparison snapshot of 33 public models. The 7 November local runs completed all 37 public benchmarks: **115,479 unique requests and 279,333 decisions per model, 100% final coverage**. Nominal family sizes include a vision tower and decision head; exact stored counts and source identities are in [the results](docs/results.md).
+Exact stored counts and source identities are in [the results](benchmark/results.md).
 
-[![GS1 parameter–performance Pareto frontier](assets/model-quality.svg)](assets/gs1_pareto_frontier.pdf)
+[![GS1 parameter–performance Pareto frontier](assets/model-quality.svg)](assets/gs1_pareto_frontier.svg)
 
 New full-split measurements, 9 November 2026:
 
@@ -36,7 +38,7 @@ New full-split measurements, 9 November 2026:
 | AG News | 7,600 | 90.99% | 91.83% | 92.01% |
 | ToolACE selection | 640 | 93.28% | 93.91% | 94.22% |
 
-JevBench covers its pinned public tasks, separate from the sealed leaderboard composite. ToolACE measures first-tool selection on a fixed hash-selected subset. [All 37 benchmark scores, five areas, AA components, Brier, ECE and provenance →](docs/results.md)
+[All 37 benchmark scores, five areas, AA components, Brier, ECE and provenance →](benchmark/results.md)
 
 ## Quick start
 
@@ -133,7 +135,7 @@ print(result.scores["urgency"].score)
 
 ## Inference performance
 
-Fresh measurements of the current release, **9 November 2026**:
+Fresh measurements of the current release:
 
 | Model | HF default P50 | GS1 eager P50 | CUDA Graph P50 / P95 | Speedup | Graph allocated |
 |---|---:|---:|---:|---:|---:|
@@ -152,7 +154,7 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
   --model /path/to/GS1-0.8B --out runs/latency/GS1-0.8B.json
 ```
 
-[All shapes, P50/P95/P99, memory and methodology](docs/latency.md) · [Raw samples](benchmark/results/inference-latency.json) · [Earlier service/IPC and replica measurements](docs/results.md#latency-and-memory)
+[All shapes, P50/P95/P99, memory and methodology](benchmark/latency.md) · [Raw samples](benchmark/results/inference-latency.json) · [Earlier service/IPC and replica measurements](benchmark/results.md#latency-and-memory)
 
 ## Try the playground
 
@@ -167,7 +169,7 @@ npm run build
 npm start
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 8000. Explore **Query, Go, Maze and Snake** with probabilities and raw JSON side by side. GS1 is the default backend; Jev is an optional comparison backend configured on the Node server. [Setup and controls](playground/README.md)
+Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 8000. Explore **Query, Go, Maze and Snake** with probabilities and raw JSON side by side. GS1 is the default backend. For hosted Jev, export `TYPESAFE_API_KEY` on the Node server to call the official TypeSafe API. [Setup and controls](playground/README.md)
 
 ## How GS1 decides
 
@@ -177,7 +179,7 @@ GS1 combines Qwen3.5 hybrid sequence mixing, **segmented bidirectional full atte
 
 ## Documentation and citation
 
-[Model](docs/model.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Deployment](docs/deployment.md) · [Evaluation](benchmark/README.md) · [Release](docs/release.md) · [Contributing](CONTRIBUTING.md)
+[Model](docs/model.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Evaluation](benchmark/README.md) · [Contributing](CONTRIBUTING.md)
 
 Code: [Apache-2.0](LICENSE). Model-weight licenses are stated separately in each model card. This release contains model architecture, inference, serving, demonstrations and evaluation.
 

@@ -1,7 +1,5 @@
 # GS1 inference latency
 
-[English](latency.md) · [简体中文](latency.zh-CN.md)
-
 ## Current release · 9 November 2026
 
 Three model sizes, two context lengths, one/eight questions and three inference paths: **36 groups, 1,080 timed calls and 4,860 logical decisions**. Each group uses five warmups and 30 measurements on a single RTX 4090 reporting 48 GiB, with two CPU threads. Computation is BF16; original FP32 text/head and BF16 vision storage dtypes are preserved.
@@ -10,7 +8,7 @@ All **12 shape qualifications passed**, with **zero measured logit drift and pro
 
 ![Current release latency](../assets/inference-latency.svg)
 
-All latency values below are **milliseconds**. P50/P95 are sample quantiles; speedup is HF default P50 divided by CUDA Graph P50. Complete raw samples, P99, throughput, software hashes, checkpoint identity and qualification checks are in [the JSON record](../benchmark/results/inference-latency.json).
+All latency values below are **milliseconds**. P50/P95 are sample quantiles; speedup is HF default P50 divided by CUDA Graph P50. Complete raw samples, P99, throughput, software hashes, checkpoint identity and qualification checks are in [the JSON record](results/inference-latency.json).
 
 | Model | Longest branch | Questions | HF default P50 / P95 | GS1 eager P50 / P95 | CUDA Graph P50 / P95 | Speedup | Graph allocated / reserved |
 |---|---:|---:|---:|---:|---:|---:|---:|

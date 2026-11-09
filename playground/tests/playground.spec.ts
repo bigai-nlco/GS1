@@ -3,7 +3,7 @@ import { GoGame, goSettlement } from '../server/games';
 import type { GameSnapshot } from '../src/lab-types';
 
 test.beforeEach(async ({ page }, testInfo) => {
-  if (testInfo.titlePath.some(title => title === 'live OpenRouter / Jev')) return;
+  if (testInfo.titlePath.some(title => title === 'live TypeSafe / Jev')) return;
   await page.route('**/playground/backends', route => route.fulfill({ json: {
     default: 'gs1_local',
     backends: [{ id: 'gs1_local', label: 'GS1 · GS1', model: 'GS1', available: true, reason: '' }],
@@ -21,7 +21,7 @@ test('query editors preserve structured inputs, render each primitive, and retai
       const keys = Object.keys(q.criteria), probabilities = Object.fromEntries(keys.map((k, i) => [k, id === 'years_of_experience' ? i === 3 ? .98 : i === 2 ? .02 : 0 : i === 0 ? 1 : 0]));
       return [id, q.type === 'choice' ? { type: 'choice', choice: keys[0], probabilities, confidence: 1 } : { type: 'score', score: id === 'years_of_experience' ? 2.98 : 0, legend: Object.fromEntries(keys.map((k, i) => [k, (q.criteria as unknown[])[i]])), probabilities, confidence: 1 }];
     }));
-    const response = { model: 'typesafe/jev-fixture', answers, usage: { input_tokens: 253, output_tokens: 40 } };
+    const response = { model: 'jev-fixture', answers, usage: { input_tokens: 253, output_tokens: 40 } };
     await route.fulfill({ json: { request, response, raw_response: { ...response, provider: 'TypeSafe', id: 'raw-provider-id', usage: { ...response.usage, cost: .001 } }, latency_ms: 670.2 } });
   });
   await page.goto('/');
@@ -122,7 +122,7 @@ test('Go finishes after a placement settles owned and neutral points', async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test.describe('live OpenRouter / Jev', () => {
+test.describe('live TypeSafe / Jev', () => {
   test.skip(process.env.GS1_LIVE !== '1', 'Set GS1_LIVE=1 to use the configured server-side key.');
   test('all query examples support native primitives and raw provider responses', async ({ page }) => {
     test.setTimeout(180_000);
@@ -130,12 +130,12 @@ test.describe('live OpenRouter / Jev', () => {
     for (const name of ['Multiple Choice', 'Score', 'Resume screening']) {
       await page.getByRole('button', { name, exact: true }).click();
       await page.getByRole('button', { name: 'Run query', exact: true }).click();
-      await expect(page.locator('.response-footnote')).toContainText('typesafe/jev', { timeout: 35_000 });
+      await expect(page.locator('.response-footnote')).toContainText('jev-', { timeout: 35_000 });
       await expect(page.getByRole('alert')).toHaveCount(0);
       await expect(page.locator('.latency')).not.toHaveText('— ms');
       await page.getByRole('tab', { name: 'JSON', exact: true }).click();
-      await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('"provider"');
-      await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('"cost"');
+      await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('"model": "jev-');
+      await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('"usage"');
       await page.getByRole('tab', { name: 'Overview', exact: true }).click();
       if (name === 'Multiple Choice') await page.screenshot({ path: '../.local/output/playwright/redesigned-query.png', fullPage: true });
       if (name === 'Resume screening') await page.screenshot({ path: '../.local/output/playwright/query-primitive-live.png', fullPage: true });
@@ -170,7 +170,7 @@ test.describe('live OpenRouter / Jev', () => {
       await expect(page.locator('.completion')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Run game', exact: true })).toBeEnabled();
     }
-    await expect(page.locator('.response-footnote')).toContainText('typesafe/jev');
+    await expect(page.locator('.response-footnote')).toContainText('jev-');
     await expect(page.getByRole('alert')).toHaveCount(0);
     await page.screenshot({ path: '../.local/output/playwright/redesigned-go.png', fullPage: true });
   });
@@ -181,7 +181,7 @@ test.describe('live OpenRouter / Jev', () => {
     await page.getByRole('button', { name: 'Run maze', exact: true }).click();
     await expect(page.locator('.completion')).toContainText('Exit reached', { timeout: 120_000 });
     await expect(page.getByRole('button', { name: 'Run maze', exact: true })).toBeDisabled();
-    await expect(page.locator('.response-footnote')).toContainText('typesafe/jev');
+    await expect(page.locator('.response-footnote')).toContainText('jev-');
     await expect(page.getByRole('alert')).toHaveCount(0);
     await page.screenshot({ path: '../.local/output/playwright/redesigned-maze.png', fullPage: true });
   });

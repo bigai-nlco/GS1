@@ -50,7 +50,7 @@ An `--out` directory receives `evaluation.json` and `accuracy_manifest.json`; ex
 
 Choice/Score accuracy uses argmax, with pinned benchmark tie conventions. Soft-only targets measure expected correctness. Brier uses `sum((p-target)^2) + 1 - sum(target^2)`; Noul uses `[1-p, p]`. ECE uses ten equal-width top-label bins. Test labels never enter model requests. Local runs default to CPU/FP32/reference, so CUDA measurements explicitly set device and precision.
 
-Exit status: 0 complete valid predictions; 1 prediction failures; 2 invalid configuration, inputs or initialization. [Published full results](../docs/results.md) include source hashes and exact scope. Decision Index uses [its official scripts](di/README.md); there is no in-tree scorer or builder.
+Exit status: 0 complete valid predictions; 1 prediction failures; 2 invalid configuration, inputs or initialization. [Published full results](results.md) include source hashes and exact scope. Decision Index uses [its official scripts](di/README.md); there is no in-tree scorer or builder.
 
 ## Inference latency
 
@@ -63,4 +63,4 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
   --contexts 256 1024 --questions 1 8 --warmup 5 --repeats 30
 ```
 
-Timing covers complete in-process decisions, excluding model loading, graph capture and network transport. JSON retains every sample, P50/P95/P99, actual token lengths, memory, software/checkpoint identities, and resident-graph replay checks. [Methodology and full results](../docs/latency.md).
+Timing covers complete in-process decisions, excluding model loading, graph capture and network transport. JSON retains every sample, P50/P95/P99, actual token lengths, memory, software/checkpoint identities, and resident-graph replay checks. [Methodology and full results](latency.md).

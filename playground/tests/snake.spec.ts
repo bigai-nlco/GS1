@@ -7,7 +7,7 @@ async function fixture(page: Page, setup: (game: SnakeGame) => void = () => {}) 
   const requests: { version: number; backend: string }[] = [];
   let hold: Promise<void> | undefined;
   await page.route('**/playground/backends', route => route.fulfill({ json: { default: 'gs1_local', backends: [
-    { id: 'jev', label: 'Jev · OpenRouter', model: '~typesafe/jev-latest', available: true, reason: '' },
+    { id: 'jev', label: 'Jev · TypeSafe', model: 'jev-latest', available: true, reason: '' },
     { id: 'gs1_local', label: 'GS1 · GS1', model: 'GS1', available: true, reason: '' },
   ] } }));
   await page.route('**/playground/games', route => {
@@ -19,7 +19,7 @@ async function fixture(page: Page, setup: (game: SnakeGame) => void = () => {}) 
   await page.route('**/playground/games/snake-fixture/step', async route => {
     const body = route.request().postDataJSON(); requests.push(body);
     if (hold) await hold;
-    const model = body.backend === 'gs1_local' ? 'GS1' : '~typesafe/jev-latest';
+    const model = body.backend === 'gs1_local' ? 'GS1' : 'jev-latest';
     const request = game.request(model), proposed = game.state.guarded ? 'LEFT' : 'UP';
     const probabilities = { UP: proposed === 'UP' ? .7 : .2, DOWN: .01, LEFT: proposed === 'LEFT' ? .7 : .2, RIGHT: .09 };
     const response = { model, usage: { input_tokens: 100, output_tokens: 0 }, answers: { move: { type: 'choice' as const, choice: proposed, probabilities, confidence: .7 }, risk: { type: 'noul' as const, noul: .9 }, food: { type: 'noul' as const, noul: .8 } } };
@@ -58,6 +58,9 @@ test('Snake preserves model probabilities and guard interventions, selects deplo
     await page.goto('/'); await page.getByRole('button', { name: /^Snake/ }).click();
     await page.getByLabel('Snake board size').selectOption('6');
     await expect(page.getByRole('img', { name: /6 by 6 Snake board/ })).toBeVisible();
+    await page.getByLabel('Decision model').selectOption('jev');
+    await expect(page.locator('.connection')).toContainText('Connected to TypeSafe');
+    await expect(page.locator('.model-control code')).toHaveText('jev-latest');
     await page.getByLabel('Decision model').selectOption('gs1_local');
     await expect(page.locator('.connection')).toContainText('Connected to model');
     await page.getByRole('button', { name: 'Run snake', exact: true }).click();
@@ -162,6 +165,6 @@ test('live Jev answers all three Snake questions and executes one move per respo
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.answer-card')).toHaveCount(3);
   await expect(page.locator('.answer-id')).toContainText(['move', 'can_move', 'food_reachable']);
-  await expect(page.locator('.response-footnote')).toContainText('typesafe/jev');
+  await expect(page.locator('.response-footnote')).toContainText('jev-');
   await page.screenshot({ path: '../.local/output/playwright/snake-live.png', fullPage: true });
 });

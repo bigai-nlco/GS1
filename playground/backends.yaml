@@ -1,8 +1,8 @@
 # Client endpoint catalog only. Model-process options are explicit gs1 serve flags.
 backends:
   jev:
-    base_url: https://openrouter.ai/api/alpha/decisions
-    model: "~typesafe/jev-latest"
+    base_url: https://api.typesafe.ai
+    model: "jev-latest"
   gs1_local:
     base_url: http://127.0.0.1:8000
     model: GS1

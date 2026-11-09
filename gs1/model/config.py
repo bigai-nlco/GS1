@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 INFERENCE_LIMITS = dict(
-    max_context=16384,
+    max_context=65536,
     max_questions=512,
     max_request_tokens=131072,
     max_branches=5120,

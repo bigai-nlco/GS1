@@ -133,7 +133,7 @@ test('final scoring assigns provably dead stones to their territory owner', () =
 });
 test('model requests offer only legal placements and explain automatic settlement', () => {
   const game = new GoGame(); game.apply('C3');
-  const request = game.request('~typesafe/jev-latest');
+  const request = game.request('jev-latest');
   const state = request.state as Record<string, unknown>;
   assert.match(String(state.rules), /passing is not allowed/);
   assert.equal('consecutive_passes' in state, false);
@@ -144,7 +144,7 @@ test('model requests offer only legal placements and explain automatic settlemen
   assert.deepEqual(state.ownership, Array.from({ length: 5 }, () => Array(5).fill('unsettled')));
   game.state.board = board('BB.WW', '.B.W.', 'BB.WW', '.B.W.', 'BB.WW');
   game.state.settlement = goSettlement(game.state.board, 5);
-  const settledState = game.request('~typesafe/jev-latest').state as Record<string, unknown>;
+  const settledState = game.request('jev-latest').state as Record<string, unknown>;
   assert.deepEqual(settledState.ownership, Array.from({ length: 5 }, () => ['black', 'black', 'neutral', 'white', 'white']));
   assert.deepEqual(settledState.settlement, { unsettled_points: 0, neutral_points: 5, settled_points: 25 });
 });

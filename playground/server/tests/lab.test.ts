@@ -17,10 +17,10 @@ const questions = {
 function fixture(t: test.TestContext, delay = 0, choice = 'C3') {
   const runs = mkdtempSync(join(tmpdir(), 'gs1-lab-')), requests: DecisionRequest[] = [];
   t.after(() => rmSync(runs, { recursive: true, force: true }));
-  const registry = { profile: () => ({ modelName: '~typesafe/jev-latest', async evaluate(request: DecisionRequest) {
+  const registry = { profile: () => ({ modelName: 'jev-latest', async evaluate(request: DecisionRequest) {
     requests.push(structuredClone(request));
     if (delay) await new Promise(resolve => setTimeout(resolve, delay));
-    const response = { model: 'typesafe/jev-fixture', usage: { input_tokens: 10, output_tokens: 0 }, answers: Object.fromEntries(Object.entries(request.questions).map(([id, q]) => {
+    const response = { model: 'jev-fixture', usage: { input_tokens: 10, output_tokens: 0 }, answers: Object.fromEntries(Object.entries(request.questions).map(([id, q]) => {
       const keys = candidateIds(q), p = keys.map((_, i) => keys.includes(choice) ? Number(keys[i] === choice) : Number(i === 0));
       return [id, makeAnswer(q, p)];
     })) };

@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-React 客户端与 Node 服务提供 **Query、Go、Maze、Snake**，共用类型化决策后端，默认选择 GS1。Jev／OpenRouter 保留为可选对比，本地 GS1 无需云 API key。
+React 客户端与 Node 服务提供 **Query、Go、Maze、Snake**，共用类型化决策后端，默认选择 GS1。Jev 通过 TypeSafe 官方 API 提供可选对比，本地 GS1 无需云 API key。
 
 ![GS1 Playground](../assets/playground.png)
 
@@ -21,9 +21,20 @@ npm start
 
 打开 [localhost:3000](http://127.0.0.1:3000)。`backends.yaml` 中 `gs1_local` 默认连接端口 8000、模型别名 `GS1`。可改为部署服务对应的地址和模型；服务应提供 `GET /v1/models` 与 `POST /v1/systemone`。展示名称来自配置的实际端点，不写死模型尺寸。
 
-## 可选 Jev 与开发
+## 通过 TypeSafe 官方 API 使用 Jev
 
-在仓库根 `.env` 中设置 `OPENROUTER_API_KEY` 后切换 Jev，凭据只在 Node 进程中使用。仅 Jev 部署时，在本目录运行 `npm start -- --backends-config backends_jev.yaml --default-backend jev`。
+从 [TypeSafe 控制台](https://console.typesafe.ai)获取 API key，按上文安装依赖并构建后，在 `playground/` 中运行：
+
+```bash
+export TYPESAFE_API_KEY="your-typesafe-api-key"
+npm start -- --backends-config backends_jev.yaml --default-backend jev
+```
+
+打开 [localhost:3000](http://127.0.0.1:3000) 即可使用 Jev，无需启动本地模型服务。默认模型为 `jev-latest`；Node 按[官方快速开始](https://docs.typesafe.ai/introduction/quickstart)，通过 Bearer 认证直接调用 `https://api.typesafe.ai/v1/systemone`。密钥仅保留在 Node 服务端。
+
+如需同时提供 GS1 和 Jev，导出同一环境变量后，以默认配置运行 `npm start`，再从模型选择器切换到 **Jev · TypeSafe**。
+
+## 开发
 
 ```bash
 # 在 playground/ 的两个终端中分别运行：

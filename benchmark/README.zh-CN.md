@@ -50,7 +50,7 @@ uv run python -m benchmark --api-url http://127.0.0.1:8000 --model GS1 \
 
 Choice／Score 使用 argmax，按固定 benchmark 约定处理并列；只有软标签时计算期望正确率。Brier 为 `sum((p-target)^2) + 1 - sum(target^2)`，Noul 使用 `[1-p,p]`。ECE 使用最大类别概率的十个等宽区间，标签不送入模型。本地默认 CPU／FP32／reference，因此 CUDA 测量需要显式指定设备和精度。
 
-退出码：0 为全部有效完成；1 为预测失败；2 为配置、输入或初始化错误。[已发布完整结果](../docs/results.zh-CN.md)包含来源哈希与口径。Decision Index 使用[官方脚本](di/README.zh-CN.md)，仓库不含其 builder 或 scorer。
+退出码：0 为全部有效完成；1 为预测失败；2 为配置、输入或初始化错误。[已发布完整结果](results.md)包含来源哈希与口径。Decision Index 使用[官方脚本](di/README.zh-CN.md)，仓库不含其 builder 或 scorer。
 
 ## 推理时延
 
@@ -63,4 +63,4 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
   --contexts 256 1024 --questions 1 8 --warmup 5 --repeats 30
 ```
 
-计时覆盖进程内完整决策，排除模型加载、图捕获和网络传输。JSON 保留每次调用、P50／P95／P99、实际 token 长度、显存、软件与检查点身份，并确认测量期间发生常驻图回放。[测量方法与完整结果](../docs/latency.zh-CN.md)。
+计时覆盖进程内完整决策，排除模型加载、图捕获和网络传输。JSON 保留每次调用、P50／P95／P99、实际 token 长度、显存、软件与检查点身份，并确认测量期间发生常驻图回放。[测量方法与完整结果](latency.md)。

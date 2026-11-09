@@ -32,7 +32,7 @@ export function readCatalog(path: string): Record<string, Endpoint> {
 }
 export function readKey(envFile: string): string {
   const values = existsSync(envFile) ? parseEnv(readFileSync(envFile)) : {};
-  return process.env.OPENROUTER_API_KEY ?? values.OPENROUTER_API_KEY ?? '';
+  return process.env.TYPESAFE_API_KEY ?? values.TYPESAFE_API_KEY ?? '';
 }
 export function options(argv = process.argv.slice(2)): ServerOptions {
   const { values } = parseArgs({ args: argv, options: {

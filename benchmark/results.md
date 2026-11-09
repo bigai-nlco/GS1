@@ -1,12 +1,10 @@
 # GS1 results
 
-[English](results.md) · [简体中文](results.zh-CN.md)
-
 ## Complete public Decision Index
 
 The 7 November 2026 evaluation completed **37 public benchmarks plus four AA component suites** for each released checkpoint: **115,479 unique requests, 279,333 decisions, 100% final coverage, zero final failed requests**. Public index scores are **56.12 / 62.22 / 68.97** for 0.8B / 2B / 4B. Raw indices before chance correction are **67.36 / 71.70 / 76.47**.
 
-The public suite is edition 0.3, in the lineage used by the Decision Index 0.4/0.4.1 public text board. These are local complete-public-panel results, not private Full scores. Weight identities match the release folders. The public inputs' SHA-256 is `da54e19b63c2b42f5e1b33f0f559c6b793659e883d887dcedaf2ce4c84f6c97b`. Source commit, aggregate-file hashes, predictor IDs and original safetensors hashes are retained in [the machine-readable record](../benchmark/results/public-evaluation.json).
+The public suite is edition 0.3, in the lineage used by the Decision Index 0.4/0.4.1 public text board. These are local complete-public-panel results, not private Full scores. Weight identities match the release folders. The public inputs' SHA-256 is `da54e19b63c2b42f5e1b33f0f559c6b793659e883d887dcedaf2ce4c84f6c97b`. Source commit, aggregate-file hashes, predictor IDs and original safetensors hashes are retained in [the machine-readable record](results/public-evaluation.json).
 
 The run used BF16 computation, FP32 persistent text/head parameters and single-branch native reference execution. Context was extended to 32,768 tokens: two unchanged over-limit inputs for 0.8B and 2B were replayed successfully; 4B used 32k from its first request. No input text or weights changed, and no successful input was dropped. This distinguishes final coverage from first-attempt success.
 
@@ -72,7 +70,7 @@ Raw and skill are displayed on a 0–100 scale. Raw uses the named native metric
 
 ![Per-benchmark skill](../assets/benchmark-breakdown.svg)
 
-[CSV](../benchmark/results/decision-index.csv) · [JSON with tracks and chance levels](../benchmark/results/public-evaluation.json) · [Official-script reproduction](../benchmark/di/README.md)
+[CSV](results/decision-index.csv) · [JSON with tracks and chance levels](results/public-evaluation.json) · [Official-script reproduction](di/README.md)
 
 ## Regular benchmark measurements
 
@@ -91,7 +89,7 @@ Fresh reference-engine runs on 9 November 2026 used the same three checkpoint we
 | GS1-4B | ToolACE selection | 94.22% | 0.088759 | 0.027009 |
 
 
-JevBench is pinned to `fcc69279a933f882ccc4489eb14bf467647dbdb7` and includes Easy, Original and Hard. The reported number is public task accuracy, not its sealed composite/rank. ToolACE measures the first single-tool/no-tool choice, not argument generation or execution; multi-tool first calls and malformed conversations are outside this adaptation. Brier is the full multiclass expected sum; Noul uses two classes. ECE uses ten equal-width bins of top-label probability. All metrics retain the measured denominator, and no test-set calibration is fitted. [Aggregates, bins and source hashes](../benchmark/results/regular-benchmarks.json)
+JevBench is pinned to `fcc69279a933f882ccc4489eb14bf467647dbdb7` and includes Easy, Original and Hard. The reported number is public task accuracy, not its sealed composite/rank. ToolACE measures the first single-tool/no-tool choice, not argument generation or execution; multi-tool first calls and malformed conversations are outside this adaptation. Brier is the full multiclass expected sum; Noul uses two classes. ECE uses ten equal-width bins of top-label probability. All metrics retain the measured denominator, and no test-set calibration is fitted. [Aggregates, bins and source hashes](results/regular-benchmarks.json)
 
 ## AA v1 public components
 
@@ -104,7 +102,7 @@ JevBench is pinned to `fcc69279a933f882ccc4489eb14bf467647dbdb7` and includes Ea
 | WildGuard | average_f1 | 89.12% | 91.20% | 91.58% |
 
 
-The complete local v1 aggregate is **51.74 / 53.24 / 51.28**. This is a historical public adaptation, separate from the current official AA index. Omniscience uses 600 public five-option questions rather than the official private population; WildGuard uses 856 locally frozen rows rather than the official 835-row subset. HLE has 513 records and When2Call 3,423. NHR is `abstained / (abstained + wrong)`, with 1 when both are zero. Confidence rejection was not applied to these component results; zero NHR therefore remains visible alongside accuracy. [Protocol and inputs](../benchmark/aadi/README.md)
+The complete local v1 aggregate is **51.74 / 53.24 / 51.28**. This is a historical public adaptation, separate from the current official AA index. Omniscience uses 600 public five-option questions rather than the official private population; WildGuard uses 856 locally frozen rows rather than the official 835-row subset. HLE has 513 records and When2Call 3,423. NHR is `abstained / (abstained + wrong)`, with 1 when both are zero. Confidence rejection was not applied to these component results; zero NHR therefore remains visible alongside accuracy. [Protocol and inputs](aadi/README.md)
 
 ## Latency and memory
 
@@ -117,7 +115,7 @@ See [inference latency](latency.md) for the 9 November comparison of complete HF
 | GS1-4B | 76.06 ms | **35.22 / 36.53 ms** | 2.16× | 23.68 GiB |
 
 
-Source measurements: RTX 4090 devices reporting 48 GiB, BF16 computation, fixed weights and tested native arithmetic. The table uses one question and a 256-token longest branch, 20 measured requests per GPU, warmed execution, one independent GPU replica. Request P50/P95 include preparation and local worker/IPC overhead and exclude model load and graph capture. Reserved GPU memory is also present in the [raw measurements](../benchmark/results/latency.json), separately from allocated memory.
+Source measurements: RTX 4090 devices reporting 48 GiB, BF16 computation, fixed weights and tested native arithmetic. The table uses one question and a 256-token longest branch, 20 measured requests per GPU, warmed execution, one independent GPU replica. Request P50/P95 include preparation and local worker/IPC overhead and exclude model load and graph capture. Reserved GPU memory is also present in the [raw measurements](results/latency.json), separately from allocated memory.
 
 ![Context scaling](../assets/latency-context.svg)
 
@@ -131,7 +129,7 @@ The technical report separately measures warm GS1-2B engine medians of **16.00 /
 
 ## Reproduction and figure sources
 
-[Evaluation commands](../benchmark/README.md) · [Inference qualification](inference.md) · [Official Decision Index scripts](../benchmark/di/README.md).
+[Evaluation commands](README.md) · [Inference qualification](../docs/inference.md) · [Official Decision Index scripts](di/README.md).
 
 ```bash
 uv sync --locked --extra eval
@@ -140,4 +138,4 @@ uv run python -m benchmark.report
 
 This redraws the five quantitative SVG/PNG figures from aggregate JSON under `benchmark/results`; it does not run models or modify benchmark data. The 9B report value remains separate until its checkpoint can be validated.
 
-The homepage Pareto figure is preserved separately from its supplied PDF. Convert it with `uv run --no-project --with pymupdf python scripts/convert_pareto.py`; its 6 November report snapshot scores remain distinct from the 7 November local evaluation. `benchmark.report` writes the [local size comparison](../assets/model-size-results.svg) and leaves `model-quality.svg` intact.
+The homepage Pareto figure is preserved as [SVG](../assets/gs1_pareto_frontier.svg); its 6 November report snapshot scores remain distinct from the 7 November local evaluation. `benchmark.report` writes the local size comparison to `assets/model-size-results.svg` and leaves `model-quality.svg` intact.

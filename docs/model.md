@@ -31,7 +31,7 @@ Head-level permutation equivalence holds when candidate order is restored and th
 
 All three have two candidate-routing layers and a 256-dimensional final comparison space. Read the checkpoint's own `config.json`; do not replace its settings with one global architecture preset.
 
-The serving exports permit 32,768 tokens per complete branch, 512 questions, and 131,072 logical request tokens. Actual supported shapes also depend on execution and memory budgets. The default HTTP service uses tighter admission limits; see [deployment](deployment.md). The complete public evaluation used 32k branch limits. The retained vision tower uses the complete-branch path; the reported decision benchmarks are text-only.
+The serving exports permit 65,536 tokens per complete branch, 512 questions, and 131,072 logical request tokens. Actual supported shapes also depend on execution and memory budgets. The default HTTP service uses tighter admission limits; see [inference budgets](inference.md#budgets-and-measurements). The complete public evaluation used 32k branch limits. The retained vision tower uses the complete-branch path; the reported decision benchmarks are text-only.
 
 ## Precision and output
 

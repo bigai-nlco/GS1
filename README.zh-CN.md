@@ -7,26 +7,28 @@
 **Fast, Faithful, Frontier.**
 GS1 接收状态与运行时定义的问题，直接输出 **Choice、Noul、Score** 分布。原生交叉注意力决策头为候选项检索证据，推理不生成回答文本，输出 token 数为零。
 
-[模型集合](https://huggingface.co/collections/bigai/gs1) · [快速开始](#快速开始) · [完整结果](docs/results.zh-CN.md) · [Playground](playground/README.zh-CN.md) · [模型架构](docs/model.zh-CN.md) · [文档](docs/README.zh-CN.md)
+[模型集合](https://huggingface.co/collections/bigai/gs1) · [快速开始](#快速开始) · [完整结果](benchmark/results.md) · [Playground](playground/README.zh-CN.md) · [模型架构](docs/model.zh-CN.md) · [文档](docs/README.zh-CN.md)
 
 ## Highlights
 
-- **Fast — 直接决策，零文本解码。** 同一问题的全部候选项一起评分，直接返回完整概率分布。当前 0.8B 模型的单问题完整调用 **P50 为 12.51 ms**；在测得的八问题输入上，CUDA Graph 相对 HF 默认推理加速 **6.05×**。
-- **Faithful — 围绕真正用于决策的概率学习。** CRPO 使用采样动作的真实概率计算 Brier 奖励。部署时，原生概率与置信度使程序能够延后不确定的判断、获取更多证据，或选择请求中提供的拒答选项。[概率与置信度](docs/api.zh-CN.md#置信度)
-- **Frontier — 以原生决策头检索证据。** 分段双向注意力与保留 carry 的 Attention Residuals 为原生交叉注意力决策头提供表示，支持运行时定义的候选集合。报告的公开对比快照中，GS1-4B 得分 **68.95**，比 Jev 1.14 高 **8.25 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型架构](docs/model.zh-CN.md)
+- **用原生决策头检索证据。** 多头交叉注意力为运行时定义的候选项查询状态证据。在上下文与输入表示固定时，打乱候选项再还原顺序，决策头输出的概率保持一致。[模型架构](docs/model.zh-CN.md#骨干与证据检索)
+- **完整比较，复用前缀。** 因果 Gated DeltaNet 与分段双向全注意力让候选项读取完整比较上下文，同时保持共享前缀不变，供不同问题复用。保留 carry 的 **AttnRes** 在稀疏全注意力接收层查询早期表示，并保留显式跳跃连接的锚点。
+- **Fast — 原生决策，零文本解码。** 一个联合分布直接给出 **Choice** 候选概率、**Noul** 真伪判断和 **Score** 有序等级期望。采用 CUDA Graph，GS1-0.8B 的单个短问题调用 **P50 为 12.51 ms**；八个短问题相对 HF 默认推理加速 **6.05×**。[实测数据](benchmark/latency.md)
+- **Faithful — 学习真正用于行动的概率。** CRPO 用采样动作的真实概率计算 Brier 奖励；原生分布与置信度向应用暴露不确定性，支持延后判断、补充证据或选择显式拒答选项。[概率与置信度](docs/api.zh-CN.md#置信度)
+- **Frontier — 紧凑规模，出色决策质量。** 报告的公开对比快照中，GS1-4B 得分 **68.95**，比 Jev 1.14 高 **8.25 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型与成绩](#模型与成绩)
 
 ## 模型与成绩
 
-| 模型 | 报告快照 · 11 月 6 日 | 本地完整评测 · 11 月 7 日 | 权重 |
-|---|---:|---:|---|
-| **GS1-0.8B** | **56.15** | 56.12 | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
-| **GS1-2B** | **62.22** | 62.22 | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
-| **GS1-4B** | **68.95** | 68.97 | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
-| **GS1-9B** | **70.47** | — | [Hugging Face](https://huggingface.co/bigai/GS1-9B) · 检查点待补齐 |
+| 模型 | Decision Index 0.4.1 | 权重 |
+|---|---:|---|
+| **GS1-0.8B** | **56.15** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
+| **GS1-2B** | **62.22** | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
+| **GS1-4B** | **68.95** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
+| **GS1-9B** | **70.47** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
 
-两列均为 **Decision Index 公共分数**，与包含私有任务的 Full 榜单分开。下图保留技术报告中 11 月 6 日、33 个公开对比模型的快照；11 月 7 日的本地评测完成全部 37 个公开 benchmark，每个型号 **115,479 个唯一请求、279,333 个决策，最终覆盖率 100%**。系列采用标称尺寸；含视觉塔和决策头的实际参数量与来源见[完整结果](docs/results.zh-CN.md)。
+实际存储参数量与来源信息见[完整结果](benchmark/results.md)。
 
-[![GS1 参数量—性能 Pareto 前沿](assets/model-quality.svg)](assets/gs1_pareto_frontier.pdf)
+[![GS1 参数量—性能 Pareto 前沿](assets/model-quality.svg)](assets/gs1_pareto_frontier.svg)
 
 2026 年 11 月 9 日新增的完整测试集测量：
 
@@ -36,7 +38,7 @@ GS1 接收状态与运行时定义的问题，直接输出 **Choice、Noul、Sco
 | AG News | 7,600 | 90.99% | 91.83% | 92.01% |
 | ToolACE selection | 640 | 93.28% | 93.91% | 94.22% |
 
-JevBench 对应固定版本公开任务，与包含密封题目的榜单综合分不同。ToolACE 测量固定哈希子集上的首次工具选择。[查看全部 37 项分数、五个领域、AA 组件、Brier、ECE 和来源 →](docs/results.zh-CN.md)
+[查看全部 37 项分数、五个领域、AA 组件、Brier、ECE 和来源 →](benchmark/results.md)
 
 ## 快速开始
 
@@ -133,7 +135,7 @@ print(result.scores["urgency"].score)
 
 ## 推理性能
 
-**2026 年 11 月 9 日**对当前发布代码的新增测量：
+对当前发布代码的新增测量：
 
 | 模型 | HF 默认 P50 | GS1 eager P50 | CUDA Graph P50 / P95 | 加速比 | Graph 已分配显存 |
 |---|---:|---:|---:|---:|---:|
@@ -152,7 +154,7 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
   --model /path/to/GS1-0.8B --out runs/latency/GS1-0.8B.json
 ```
 
-[全部形状、P50／P95／P99、显存与测量方法](docs/latency.zh-CN.md) · [原始样本](benchmark/results/inference-latency.json) · [先前的服务／IPC 与副本测量](docs/results.zh-CN.md#延迟与显存)
+[全部形状、P50／P95／P99、显存与测量方法](benchmark/latency.md) · [原始样本](benchmark/results/inference-latency.json) · [先前的服务／IPC 与副本测量](benchmark/results.md#latency-and-memory)
 
 ## 体验 Playground
 
@@ -167,7 +169,7 @@ npm run build
 npm start
 ```
 
-在端口 8000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。**Query、Go、Maze、Snake** 展示模型概率和原始 JSON。默认后端为 GS1；Node 服务可配置可选的 Jev 对比后端。[设置与操作](playground/README.zh-CN.md)
+在端口 8000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。**Query、Go、Maze、Snake** 展示模型概率和原始 JSON。默认后端为 GS1；在 Node 服务端导出 `TYPESAFE_API_KEY` 后，可直接通过 TypeSafe 官方 API 使用 Jev。[设置与操作](playground/README.zh-CN.md)
 
 ## GS1 如何做决策
 
@@ -177,7 +179,7 @@ GS1 结合 Qwen3.5 混合序列建模、**分段双向全注意力**、**保留 
 
 ## 文档与引用
 
-[模型](docs/model.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [部署](docs/deployment.zh-CN.md) · [评测](benchmark/README.zh-CN.md) · [发布](docs/release.zh-CN.md) · [贡献指南](CONTRIBUTING.zh-CN.md)
+[模型](docs/model.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [评测](benchmark/README.zh-CN.md) · [贡献指南](CONTRIBUTING.zh-CN.md)
 
 代码采用 [Apache-2.0](LICENSE)；权重许可单独列在模型卡中。本次发布包含模型架构、推理、服务、演示与评测。
 

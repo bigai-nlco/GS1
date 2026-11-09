@@ -8,7 +8,7 @@ export function parseDecisionRequest(value: unknown, model: string): DecisionReq
   if (!record(value)) throw new Error('Request must be a JSON object.');
   if (Object.keys(value).some(k => !['state', 'questions', 'model'].includes(k))) throw new Error('Request accepts state, questions, and an optional model.');
   if (!content(value.state)) throw new Error('State must be text, a JSON object, or an array.');
-  if (value.model !== undefined && value.model !== model && !(model === '~typesafe/jev-latest' && ['jev-latest', 'typesafe/jev-latest'].includes(String(value.model)))) throw new Error(`This playground is configured for ${model}. Use that model or omit the model field.`);
+  if (value.model !== undefined && value.model !== model) throw new Error(`This playground is configured for ${model}. Use that model or omit the model field.`);
   if (!record(value.questions) || !Object.keys(value.questions).length) throw new Error('Questions must be a nonempty JSON object keyed by question ID.');
   for (const [id, q] of Object.entries(value.questions)) {
     const fail = (message: string): never => { throw new Error(`${id || '(empty ID)'}: ${message}`); };
