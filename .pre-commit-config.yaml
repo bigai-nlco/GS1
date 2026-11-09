@@ -1,0 +1,42 @@
+minimum_pre_commit_version: "4.0.0"
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+        # Preserve the original resolution of the architecture diagram linked in README.
+        exclude: ^assets/gs1-architecture\.png$
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: playground-typecheck
+        name: Type-check the playground client and server
+        entry: npm --prefix playground run typecheck
+        language: system
+        pass_filenames: false
+        files: ^playground/.*\.(ts|tsx|json)$
+      - id: shell-syntax
+        name: Check shell script syntax
+        entry: bash -c 'for script_path in "$@"; do bash -n "$script_path" || exit; done' --
+        language: system
+        types: [shell]

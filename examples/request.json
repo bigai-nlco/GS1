@@ -1,0 +1,26 @@
+{
+  "state": "A customer was charged twice and requests a refund.",
+  "questions": {
+    "team": {
+      "type": "choice",
+      "instructions": "Which team should handle this ticket?",
+      "criteria": {
+        "billing": "Payments and refunds",
+        "technical": "Software problems"
+      }
+    },
+    "refund": {
+      "type": "noul",
+      "instructions": "Does the customer request a refund?"
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate the urgency.",
+      "criteria": [
+        "Routine",
+        "Urgent",
+        "Emergency"
+      ]
+    }
+  }
+}

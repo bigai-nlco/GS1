@@ -1,0 +1,6 @@
+GS1
+Copyright 2026 BIGAI.
+
+GS1 uses Qwen3.5 components from Hugging Face Transformers under Apache-2.0.
+Third-party libraries retain their respective copyright and licenses.
+Model weights are distributed under the license stated in each model card.

@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM"],
+    "module": "NodeNext", "moduleResolution": "NodeNext", "types": ["node"],
+    "strict": true, "noUnusedLocals": true, "noUnusedParameters": true,
+    "skipLibCheck": true, "noEmit": true, "verbatimModuleSyntax": true
+  },
+  "include": ["server", "src/types.ts"]
+}

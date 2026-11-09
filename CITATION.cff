@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "Please cite GS1 when using its models or inference implementation."
+title: "GS1: Fast, Faithful, Frontier System One Intelligence"
+type: software
+version: 0.1.0
+authors:
+  - family-names: Zheng
+    given-names: Zilong
+  - family-names: Liu
+    given-names: Yang
+  - family-names: Qin
+    given-names: Shuhan
+  - family-names: Lin
+    given-names: Ziyong
+  - family-names: Li
+    given-names: Jiaqi
+  - family-names: Jia
+    given-names: Zixia
+  - family-names: Zhu
+    given-names: Song-Chun
+repository-code: "https://github.com/bigai-nlco/GS1"
+license: Apache-2.0

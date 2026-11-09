@@ -1,0 +1,80 @@
+[project]
+name = "gs1"
+version = "0.1.0"
+description = "GS1 native typed decision models and optimized inference"
+authors = [{name = "BIGAI"}]
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "torch==2.9.1", "torchvision==0.24.1", "transformers==5.3.0",
+    "safetensors>=0.5,<1", "accelerate>=1.6,<2", "huggingface-hub>=0.30,<2",
+    "pillow>=11,<13", "typesafe-sdk==0.7.0", "pydantic>=2.8,<3",
+]
+
+[project.optional-dependencies]
+serve = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1"]
+cuda = ["flash-linear-attention[cuda]==0.5.2", "causal-conv1d==1.7.0"]
+eval = [
+    "numpy>=2.2,<3", "pyyaml>=6,<7", "python-dotenv>=1,<2", "httpx>=0.28,<1",
+    "pyarrow>=19,<25",
+    "matplotlib>=3.10,<4",
+    "jevbench @ git+https://github.com/fstandhartinger/jevbench.git@fcc69279a933f882ccc4489eb14bf467647dbdb7",
+]
+# Keep compatibility with Git 2.25; pre-commit 4.6.1+ uses ls-files --deduplicate.
+dev = [
+    "httpx>=0.28,<1",
+    "pytest>=8.3,<10",
+    "pytest-asyncio>=0.26,<2",
+    "ruff==0.16.8",
+    "pre-commit==4.6.0",
+]
+
+[project.scripts]
+gs1 = "gs1.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/bigai-nlco/GS1"
+Documentation = "https://github.com/bigai-nlco/GS1/tree/main/docs"
+Models = "https://huggingface.co/collections/bigai/gs1"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+# Evaluation scripts and the playground remain source-tree tools.
+packages = ["gs1"]
+
+[tool.hatch.build.targets.sdist]
+include = ["gs1", "benchmark", "playground", "docs", "assets", "examples", "tests", "scripts", "README*", "CONTRIBUTING*", "CITATION.cff", "LICENSE", "NOTICE", "pyproject.toml", "uv.lock", ".github"]
+exclude = ["**/node_modules", "**/dist", "**/__pycache__", "**/*.tsbuildinfo", "**/test-results", "**/playwright-report"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+
+# causal-conv1d selects a prebuilt wheel using the PyTorch build version.
+[tool.uv.extra-build-dependencies]
+causal-conv1d = ["torch==2.9.1"]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["gpu: requires a CUDA device and model dependencies", "live: requires hosted credentials"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

@@ -1,0 +1,20 @@
+{
+  "schema": "gs1.report-pareto-snapshot.v1",
+  "date": "2026-11-06",
+  "metric": "Decision Index 0.4.1 public text benchmark score",
+  "source": "assets/gs1_pareto_frontier.pdf",
+  "source_sha256": "8a7ba3dbc10fbc8d7a0e0455d6b8d15da53b330a97c7877a0bc3e213f09a2ec9",
+  "scope": "33 displayed public comparison models; nominal GS1 family sizes; not an exhaustive leaderboard",
+  "models": {
+    "GS1-0.8B": 56.15,
+    "GS1-2B": 62.22,
+    "GS1-4B": 68.95,
+    "GS1-9B": 70.47
+  },
+  "reference": {
+    "model": "Jev 1.14",
+    "score": 60.7,
+    "parameters": "undisclosed"
+  },
+  "local_public_suite_record": "benchmark/results/public-evaluation.json"
+}
