@@ -4,16 +4,17 @@
 
 ![GS1 — Fast, Faithful, Frontier](assets/banner.svg)
 
-**Fast, Faithful, Frontier.**
-GS1 接收状态与运行时定义的问题，直接输出 **Choice、Noul、Score** 分布。原生交叉注意力决策头为候选项检索证据，推理不生成回答文本，输出 token 数为零。
+> ***Fast, Faithful, Frontier System One Intelligence.***
 
-[模型集合](https://huggingface.co/collections/bigai/gs1) · [快速开始](#快速开始) · [完整结果](benchmark/results.md) · [Playground](playground/README.zh-CN.md) · [模型架构](docs/model.zh-CN.md) · [文档](docs/README.zh-CN.md)
+GS1 是北京通用人工智能研究院开发的开源决策模型系列，具备快速决策与不确定性感知能力。它直接计算可变候选集合上的原生概率分布，用于智能体路由、验证、信息抽取和控制。
+
+[模型集合](https://huggingface.co/collections/bigai/gs1) · [Playground](playground/README.zh-CN.md) · [文档](docs/README.zh-CN.md) · [技术报告]()
 
 ## Highlights
 
 - **用原生决策头检索证据。** 多头交叉注意力为运行时定义的候选项查询状态证据。在上下文与输入表示固定时，打乱候选项再还原顺序，决策头输出的概率保持一致。[模型架构](docs/model.zh-CN.md#骨干与证据检索)
 - **完整比较，复用前缀。** 因果 Gated DeltaNet 与分段双向全注意力让候选项读取完整比较上下文，同时保持共享前缀不变，供不同问题复用。保留 carry 的 **AttnRes** 在稀疏全注意力接收层查询早期表示，并保留显式跳跃连接的锚点。
-- **Fast — 原生决策，零文本解码。** 一个联合分布直接给出 **Choice** 候选概率、**Noul** 真伪判断和 **Score** 有序等级期望。采用 CUDA Graph，GS1-0.8B 的单个短问题调用 **P50 为 12.51 ms**；八个短问题相对 HF 默认推理加速 **6.05×**。[实测数据](benchmark/latency.md)
+- **Fast — 原生决策，零文本解码。** 一个联合分布直接给出 **Choice** 候选概率、**Noul** 真伪判断和 **Score** 有序等级期望。采用 CUDA Graph，GS1-0.8B 的单个短问题调用 **P50 为 12.51 ms**；八个短问题相对 GS1 默认推理加速 **6.05×**。[实测数据](benchmark/latency.md)
 - **Faithful — 学习真正用于行动的概率。** CRPO 用采样动作的真实概率计算 Brier 奖励；原生分布与置信度向应用暴露不确定性，支持延后判断、补充证据或选择显式拒答选项。[概率与置信度](docs/api.zh-CN.md#置信度)
 - **Frontier — 紧凑规模，出色决策质量。** 报告的公开对比快照中，GS1-4B 得分 **68.95**，比 Jev 1.14 高 **8.25 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型与成绩](#模型与成绩)
 
@@ -42,7 +43,7 @@ GS1 接收状态与运行时定义的问题，直接输出 **Choice、Noul、Sco
 
 ## 快速开始
 
-### Hugging Face 默认推理
+### 默认推理
 
 需要 Python 3.11+。安装模型目录中的 `requirements.txt`，或对应的 PyTorch、Transformers 5.3.0、Accelerate、safetensors、Pydantic、TypeSafe SDK 和 Pillow 依赖。**无需安装或调用 `gs1` 仓库**。输入可使用本地发布目录，也可使用已上传的 Hub ID。
 
@@ -137,13 +138,13 @@ print(result.scores["urgency"].score)
 
 对当前发布代码的新增测量：
 
-| 模型 | HF 默认 P50 | GS1 eager P50 | CUDA Graph P50 / P95 | 加速比 | Graph 已分配显存 |
+| 模型 | GS1 默认 P50 | GS1 eager P50 | CUDA Graph P50 / P95 | 加速比 | Graph 已分配显存 |
 |---|---:|---:|---:|---:|---:|
 | GS1-0.8B | 54.10 ms | 54.60 ms | **12.51 / 13.22 ms** | 4.32× | 4.07 GiB |
 | GS1-2B | 53.95 ms | 54.34 ms | **18.64 / 18.69 ms** | 2.89× | 10.60 GiB |
 | GS1-4B | 72.87 ms | 73.84 ms | **35.17 / 35.24 ms** | 2.07× | 23.68 GiB |
 
-采用报告显存 48 GiB 的 RTX 4090、BF16 计算、**256 token／单问题**，每组预热五次、测量 30 次。计时覆盖**进程内完整决策调用**：输入校验、prompt 编译、模型执行、概率和类型化响应；排除模型加载、图捕获、HTTP 与 SDK 传输。加速比使用相同权重、相同输入下 HF 默认推理的 P50；保留权重的原始存储 dtype。
+采用报告显存 48 GiB 的 RTX 4090、BF16 计算、**256 token／单问题**，每组预热五次、测量 30 次。计时覆盖**进程内完整决策调用**：输入校验、prompt 编译、模型执行、概率和类型化响应；排除模型加载、图捕获、HTTP 与 SDK 传输。GS1 默认指独立模型的 `model.decide` 路径；加速比为其 P50 与 CUDA Graph P50 的比值，权重与输入相同。保留权重的原始存储 dtype。
 
 ![各型号和请求形状的 GS1 推理时延](assets/inference-latency.svg)
 
@@ -160,7 +161,7 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
 
 ![GS1 Playground](assets/playground.png)
 
-真实 GS1-0.8B 默认 eager 推理：三个问题，界面显示共享 GPU 上的 Node/HTTP 往返时间。性能表采用前文单独注明的 benchmark 设置。[复现此请求](examples/playground.json)。
+Query 示例页面展示类型化 Choice／Noul／Score 结果、原始 JSON 和单次请求往返时延。[请求示例](examples/playground.json)。
 
 ```bash
 cd playground
@@ -169,7 +170,7 @@ npm run build
 npm start
 ```
 
-在端口 8000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。**Query、Go、Maze、Snake** 展示模型概率和原始 JSON。默认后端为 GS1；在 Node 服务端导出 `TYPESAFE_API_KEY` 后，可直接通过 TypeSafe 官方 API 使用 Jev。[设置与操作](playground/README.zh-CN.md)
+在端口 8000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。通过 **Query** 编辑状态与问题、比较概率并查看原始 JSON。默认后端为 GS1；在 Node 服务端导出 `TYPESAFE_API_KEY` 后，可直接通过 TypeSafe 官方 API 使用 Jev。[设置与操作](playground/README.zh-CN.md)
 
 ## GS1 如何做决策
 
@@ -179,7 +180,7 @@ GS1 结合 Qwen3.5 混合序列建模、**分段双向全注意力**、**保留 
 
 ## 文档与引用
 
-[模型](docs/model.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [评测](benchmark/README.zh-CN.md) · [贡献指南](CONTRIBUTING.zh-CN.md)
+[模型](docs/model.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [评测](benchmark/README.zh-CN.md)
 
 代码采用 [Apache-2.0](LICENSE)；权重许可单独列在模型卡中。本次发布包含模型架构、推理、服务、演示与评测。
 

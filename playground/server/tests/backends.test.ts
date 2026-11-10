@@ -4,7 +4,6 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { RemoteBackend } from '../backends.js';
-import { SnakeGame } from '../snake.js';
 import { normalizeResponse, candidateIds, makeAnswer, HttpError } from '../protocol.js';
 import { readCatalog, readKey } from '../config.js';
 import type { DecisionRequest } from '../../src/types.js';
@@ -105,28 +104,6 @@ test('failed responses retain status/raw body without retry or fallback', async 
   const backend = new RemoteBackend({ base_url: 'https://api.typesafe.ai', model: 'fixture' }, 'key', 30, (async () => { count++; return new Response('rate limited', { status: 429 }); }) as typeof fetch);
   await assert.rejects(backend.evaluate(request, new AbortController().signal), (error: unknown) => error instanceof HttpError && error.status === 429 && error.telemetry.raw_response_text === 'rate limited');
   assert.equal(count, 1);
-});
-test('Snake’s batched questions work through both Jev and the deployed model adapter', async () => {
-  for (const hosted of [true, false]) {
-    const endpoint = hosted ? 'https://api.typesafe.ai' : 'http://127.0.0.1:8000';
-    const model = hosted ? 'jev-latest' : 'GS1';
-    const game = new SnakeGame(6, 7), input = game.request(model);
-    const best = game.moves().filter(move => move.safe).sort((a, b) => b.advance - a.advance)[0].direction;
-    const raw = { model, usage: { input_tokens: 120, output_tokens: 0 }, answers: Object.fromEntries(Object.entries(input.questions).map(([id, q]) => [id, makeAnswer(q, candidateIds(q).map((key, i) => q.type === 'choice' ? Number(key === best) : Number(i === 0)))])) };
-    let calls = 0;
-    const backend = new RemoteBackend({ base_url: endpoint, model }, 'fixture-key', 30, (async (url, init) => {
-      calls++;
-      assert.equal(url, `${endpoint}/v1/systemone`);
-      assert.equal(new Headers(init?.headers).get('Authorization'), hosted ? 'Bearer fixture-key' : 'Bearer local');
-      assert.deepEqual(JSON.parse(String(init?.body)), input);
-      return new Response(JSON.stringify(raw));
-    }) as typeof fetch);
-    const result = await backend.evaluate(input, new AbortController().signal);
-    assert.equal(calls, 1); assert.equal(result.telemetry.raw_response_text, JSON.stringify(raw));
-    assert.deepEqual(Object.keys(result.response.answers), ['move', 'risk', 'food']);
-    assert.equal(game.apply(result.response.answers.move.choice!, result.response.answers.move.probabilities), best);
-    assert.equal(game.state.steps, 1); assert.equal(game.state.interventions, 0);
-  }
 });
 test('catalog rejects serving variables and embedded credentials', t => {
   const dir = mkdtempSync(join(tmpdir(), 'gs1-catalog-')); t.after(() => rmSync(dir, { recursive: true, force: true }));

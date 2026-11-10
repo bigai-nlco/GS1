@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import type { Answer, Question } from './types';
-import type { RunResult } from './lab-types';
+import type { Answer, Question, RunResult } from './types';
 import './query-results.css';
 
 const percent = new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 1 });

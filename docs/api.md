@@ -79,4 +79,4 @@ Score `[0.25, 0.5, 0.25]` gives score 1 and confidence 0.25. These public confid
 
 Malformed or over-budget inputs fail explicitly. Queue saturation returns 529 with `Retry-After`; request deadlines return 504. Caller cancellation prevents later response delivery while GPU ownership is drained safely. Evaluation uses zero retries and records failures; application retry policy belongs to the client.
 
-The Python service runs local GS1 inference. The Node playground can also call Jev through the official TypeSafe API using `TYPESAFE_API_KEY`; credentials stay on the Node server, and the raw provider payload remains separate from its validated controller response. [Playground setup](../playground/README.md#optional-jev-via-typesafe).
+The Python service runs local GS1 inference. The Node playground can also call Jev through the official TypeSafe API using `TYPESAFE_API_KEY`; credentials stay on the Node server, and the raw provider payload remains separate from its validated response. [Playground setup](../playground/README.md#optional-jev-via-typesafe).

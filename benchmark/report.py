@@ -54,7 +54,7 @@ def render(directory, results=None):
         fontsize=9,
         color="#536171",
     )
-    # The homepage model-quality.svg is the supplied report's Pareto PDF.
+    # The homepage model-quality.svg preserves the supplied report's Pareto frontier.
     save(fig, "model-size-results")
 
     areas = data["models"][sizes[0]]["public_index"]["areas"]
@@ -190,7 +190,7 @@ def render(directory, results=None):
     if fresh.is_file():
         runs = json.loads(fresh.read_text())["models"]
         paths = [
-            ("hf_eager", "HF default", "#8C8C8C"),
+            ("hf_eager", "GS1 Default", "#8C8C8C"),
             ("gs1_eager", "GS1 eager", "#DE8585"),
             ("gs1_cuda_graph", "GS1 CUDA Graph", "#C00000"),
         ]

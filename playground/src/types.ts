@@ -6,3 +6,8 @@ export type Question =
 export interface DecisionResponse { model: string; answers: Record<string, Answer>; usage: { input_tokens: number; output_tokens: number } }
 export interface DecisionRequest { state: unknown; model: string; questions: Record<string, Question> }
 export interface Profile { id: string; label: string; available: boolean; reason: string; model: string; artifact?: { status: string; resolved_model: string } }
+export interface RunResult {
+  request: DecisionRequest; response: DecisionResponse;
+  raw_response: DecisionResponse & Record<string, unknown>;
+  latency_ms: number;
+}

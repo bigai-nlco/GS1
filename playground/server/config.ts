@@ -9,13 +9,13 @@ import { object } from './protocol.js';
 export const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 export interface Endpoint { base_url: string; model: string }
 export interface ServerOptions {
-  host: string; port: number; runsDir: string; backendsConfig: string; envFile: string;
-  defaultBackend: string; deadlineSeconds: number; realtimeTickSeconds: number;
+  host: string; port: number; backendsConfig: string; envFile: string;
+  defaultBackend: string; deadlineSeconds: number;
 }
 export const defaults: ServerOptions = {
-  host: '127.0.0.1', port: 3000, runsDir: resolve(REPO_ROOT, 'runs'),
+  host: '127.0.0.1', port: 3000,
   backendsConfig: resolve(REPO_ROOT, 'playground/backends.yaml'), envFile: resolve(REPO_ROOT, '.env'),
-  defaultBackend: 'gs1_local', deadlineSeconds: 30, realtimeTickSeconds: 2,
+  defaultBackend: 'gs1_local', deadlineSeconds: 30,
 };
 export function readCatalog(path: string): Record<string, Endpoint> {
   const data = object(parseYaml(readFileSync(path, 'utf8')));
@@ -36,21 +36,18 @@ export function readKey(envFile: string): string {
 }
 export function options(argv = process.argv.slice(2)): ServerOptions {
   const { values } = parseArgs({ args: argv, options: {
-    host: { type: 'string' }, port: { type: 'string' }, 'runs-dir': { type: 'string' },
+    host: { type: 'string' }, port: { type: 'string' },
     'backends-config': { type: 'string' }, 'env-file': { type: 'string' },
     'default-backend': { type: 'string' }, 'deadline-seconds': { type: 'string' },
-    'realtime-tick-seconds': { type: 'string' },
   } });
   const result = { ...defaults };
   if (values.host) result.host = values.host;
   if (values.port) result.port = Number(values.port);
-  if (values['runs-dir']) result.runsDir = resolve(values['runs-dir']);
   if (values['backends-config']) result.backendsConfig = resolve(values['backends-config']);
   if (values['env-file']) result.envFile = resolve(values['env-file']);
   if (values['default-backend']) result.defaultBackend = values['default-backend'];
   if (values['deadline-seconds']) result.deadlineSeconds = Number(values['deadline-seconds']);
-  if (values['realtime-tick-seconds']) result.realtimeTickSeconds = Number(values['realtime-tick-seconds']);
   if (!Number.isInteger(result.port) || result.port < 0 || result.port > 65535) throw new Error('Invalid port');
-  for (const duration of [result.deadlineSeconds, result.realtimeTickSeconds]) if (!Number.isFinite(duration) || duration <= 0) throw new Error('Invalid deadline');
+  if (!Number.isFinite(result.deadlineSeconds) || result.deadlineSeconds <= 0) throw new Error('Invalid deadline');
   return result;
 }

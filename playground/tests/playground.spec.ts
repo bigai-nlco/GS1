@@ -1,12 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { GoGame, goSettlement } from '../server/games';
-import type { GameSnapshot } from '../src/lab-types';
 
 test.beforeEach(async ({ page }, testInfo) => {
   if (testInfo.titlePath.some(title => title === 'live TypeSafe / Jev')) return;
   await page.route('**/playground/backends', route => route.fulfill({ json: {
     default: 'gs1_local',
-    backends: [{ id: 'gs1_local', label: 'GS1 · GS1', model: 'GS1', available: true, reason: '' }],
+    backends: [{ id: 'gs1_local', label: 'GS1 · GS1', model: 'GS1', available: true, reason: '' }, { id: 'jev', label: 'Jev · TypeSafe', model: 'jev-latest', available: true, reason: '' }],
   } }));
 });
 
@@ -21,14 +19,17 @@ test('query editors preserve structured inputs, render each primitive, and retai
       const keys = Object.keys(q.criteria), probabilities = Object.fromEntries(keys.map((k, i) => [k, id === 'years_of_experience' ? i === 3 ? .98 : i === 2 ? .02 : 0 : i === 0 ? 1 : 0]));
       return [id, q.type === 'choice' ? { type: 'choice', choice: keys[0], probabilities, confidence: 1 } : { type: 'score', score: id === 'years_of_experience' ? 2.98 : 0, legend: Object.fromEntries(keys.map((k, i) => [k, (q.criteria as unknown[])[i]])), probabilities, confidence: 1 }];
     }));
-    const response = { model: 'jev-fixture', answers, usage: { input_tokens: 253, output_tokens: 40 } };
+    const response = { model: request.model, answers, usage: { input_tokens: 253, output_tokens: 0 } };
     await route.fulfill({ json: { request, response, raw_response: { ...response, provider: 'TypeSafe', id: 'raw-provider-id', usage: { ...response.usage, cost: .001 } }, latency_ms: 670.2 } });
   });
   await page.goto('/');
   await expect(page.getByRole('link', { name: 'GS1 Playground', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Query', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Playgrounds' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Run query', exact: true }).click();
   await expect(page.locator('.query-result-row')).toHaveCount(1);
   await expect(page.locator('.latency')).toHaveText('670 ms');
+  await page.screenshot({ path: '../.local/output/playwright/query-playground.png', fullPage: true });
   await page.getByRole('tab', { name: 'JSON', exact: true }).click();
   await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('raw-provider-id');
   await expect(page.getByLabel('Raw JSON response', { exact: true })).toContainText('"cost": 0.001');
@@ -78,48 +79,36 @@ test('query editors preserve structured inputs, render each primitive, and retai
   expect(errors).toEqual([]);
 });
 
-test('Go and Maze controls create real boards and regenerate a new maze', async ({ page }) => {
-  await page.goto('/'); await page.getByRole('button', { name: 'Go 02', exact: true }).click();
-  await expect(page.getByRole('img', { name: /5 by 5 Go board/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Run game', exact: true })).toBeEnabled();
-  await page.getByLabel('Go board size').selectOption('7');
-  await expect(page.getByRole('img', { name: /7 by 7 Go board/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Maze 03', exact: true }).click();
-  await expect(page.getByRole('img', { name: /Maze. Explorer/ })).toBeVisible();
-  const seed = await page.locator('.maze-legend code').textContent();
-  await page.getByRole('button', { name: 'New maze', exact: true }).click();
-  await expect(page.locator('.maze-legend code')).not.toHaveText(seed!);
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-});
-
-test('Go finishes after a placement settles owned and neutral points', async ({ page }) => {
-  const game = new GoGame();
-  game.state.board = ['BB.WW', '.B.W.', 'B..WW', '.B.W.', 'BB.WW'].join('').split('').map(s => s === 'B' ? 1 : s === 'W' ? 2 : 0);
-  game.state.settlement = goSettlement(game.state.board, 5);
-  const snapshot: GameSnapshot = { id: 'settlement-fixture', version: 0, state: game.state, moves: [], result: null };
-  let calls = 0;
-  await page.route('**/playground/games', route => route.fulfill({ json: snapshot }));
-  await page.route('**/playground/games/settlement-fixture/step', async route => {
-    calls++;
-    const choice = 'B3', player = game.state.turn === 1 ? 'Black' : 'White';
-    game.apply(choice); snapshot.version++;
-    snapshot.moves.push({ number: snapshot.version, player, choice, latency_ms: 1 });
-    await route.fulfill({ json: snapshot });
+test('Query switches backends and discards a cancelled response', async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  const requests: Record<string, unknown>[] = [];
+  await page.route('**/playground/query', async route => {
+    const request = route.request().postDataJSON(); requests.push(request);
+    const first = requests.length === 1;
+    if (first) await held;
+    const response = { model: request.model, answers: { department: { type: 'choice', choice: 'returns', probabilities: { returns: 1, billing: 0, shipping: 0 }, confidence: 1 } }, usage: { input_tokens: 10, output_tokens: 0 } };
+    try { await route.fulfill({ json: { request, response, raw_response: response, latency_ms: 15 } }); }
+    catch (error) { if (!first) throw error; /* The first browser request was cancelled. */ }
   });
-  await page.goto('/'); await page.getByRole('button', { name: 'Go 02', exact: true }).click();
-  await expect(page.getByText(/Every move places a stone; passing is disabled/)).toBeVisible();
-  await page.getByRole('button', { name: 'Run game', exact: true }).click();
-  await expect(page.locator('.completion')).toContainText('White wins by 0.5 points.');
-  await expect(page.locator('.go-settlement')).toContainText('25 / 25 points settled');
-  await expect(page.locator('.go-settlement')).toContainText('5 neutral · 0 unresolved');
-  await expect(page.locator('.completion')).toContainText('Every point is owned or neutral');
-  await expect(page.getByRole('button', { name: 'Run game', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Step', exact: true })).toBeDisabled();
-  expect(calls).toBe(1);
-  await page.screenshot({ path: '../.local/output/playwright/go-settled.png', fullPage: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  try {
+    await page.goto('/');
+    await page.getByLabel('Decision model').selectOption('jev');
+    await expect(page.locator('.connection')).toContainText('Connected to TypeSafe');
+    await expect(page.locator('.model-control code')).toHaveText('jev-latest');
+    await page.getByRole('button', { name: 'Run query', exact: true }).click();
+    await expect.poll(() => requests.length).toBe(1);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Run query', exact: true })).toBeEnabled();
+    await page.getByLabel('Decision model').selectOption('gs1_local');
+    await expect(page.locator('.connection')).toContainText('Connected to model');
+    await page.getByRole('button', { name: 'Run query', exact: true }).click();
+    await expect(page.locator('.response-footnote')).toContainText('GS1');
+    release();
+    await expect(page.locator('.response-footnote')).toContainText('GS1');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(requests.map(request => request.model)).toEqual(['jev-latest', 'GS1']);
+  } finally { release(); }
 });
 
 test.describe('live TypeSafe / Jev', () => {
@@ -140,49 +129,5 @@ test.describe('live TypeSafe / Jev', () => {
       if (name === 'Multiple Choice') await page.screenshot({ path: '../.local/output/playwright/redesigned-query.png', fullPage: true });
       if (name === 'Resume screening') await page.screenshot({ path: '../.local/output/playwright/query-primitive-live.png', fullPage: true });
     }
-  });
-  test('Jev plays both Go sides with ownership-based stopping', async ({ page }) => {
-    test.setTimeout(180_000);
-    await page.goto('/'); await page.getByLabel('Decision model').selectOption('jev'); await page.getByRole('button', { name: 'Go 02', exact: true }).click();
-    for (let i = 0; i < 8; i++) {
-      const response = page.waitForResponse(r => r.url().endsWith('/step') && r.request().method() === 'POST');
-      await page.getByRole('button', { name: 'Step', exact: true }).click();
-      const result = await response; expect(result.ok()).toBe(true);
-      const snapshot = await result.json() as GameSnapshot;
-      expect(snapshot.state.kind).toBe('go');
-      if (snapshot.state.kind !== 'go') throw new Error('Expected Go');
-      expect(snapshot.moves.at(-1)?.player).toBe(i % 2 === 0 ? 'Black' : 'White');
-      expect(snapshot.moves.at(-1)?.choice).not.toBe('pass');
-      expect(Object.keys(snapshot.result!.request.questions.move.criteria!)).not.toContain('pass');
-      expect(snapshot.state.finished).toBe(snapshot.state.settlement.unsettled === 0);
-      expect(snapshot.state.settlement).toEqual(goSettlement(snapshot.state.board, snapshot.state.size));
-      const input = snapshot.result!.request.state as Record<string, unknown>;
-      const ownership = input.ownership as string[][];
-      expect(ownership).toHaveLength(5);
-      expect(ownership.flat()).toHaveLength(25);
-      expect(ownership.flat().every(p => ['black', 'white', 'neutral', 'unsettled'].includes(p))).toBe(true);
-      if (snapshot.state.finished) {
-        await expect(page.locator('.completion')).toContainText('wins by');
-        await expect(page.getByRole('button', { name: 'Run game', exact: true })).toBeDisabled();
-        break;
-      }
-      expect(snapshot.state.winner).toBeNull();
-      await expect(page.locator('.completion')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Run game', exact: true })).toBeEnabled();
-    }
-    await expect(page.locator('.response-footnote')).toContainText('jev-');
-    await expect(page.getByRole('alert')).toHaveCount(0);
-    await page.screenshot({ path: '../.local/output/playwright/redesigned-go.png', fullPage: true });
-  });
-  test('Jev navigates a generated maze to its exit and stops', async ({ page }) => {
-    test.setTimeout(150_000);
-    await page.goto('/'); await page.getByLabel('Decision model').selectOption('jev'); await page.getByRole('button', { name: 'Maze 03', exact: true }).click();
-    await page.getByLabel('Maze size').selectOption('5');
-    await page.getByRole('button', { name: 'Run maze', exact: true }).click();
-    await expect(page.locator('.completion')).toContainText('Exit reached', { timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Run maze', exact: true })).toBeDisabled();
-    await expect(page.locator('.response-footnote')).toContainText('jev-');
-    await expect(page.getByRole('alert')).toHaveCount(0);
-    await page.screenshot({ path: '../.local/output/playwright/redesigned-maze.png', fullPage: true });
   });
 });

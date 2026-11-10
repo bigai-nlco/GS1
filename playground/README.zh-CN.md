@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-React 客户端与 Node 服务提供 **Query、Go、Maze、Snake**，共用类型化决策后端，默认选择 GS1。Jev 通过 TypeSafe 官方 API 提供可选对比，本地 GS1 无需云 API key。
+React 客户端与 Node 服务提供类型化决策 **Query** 页面，默认选择 GS1。Jev 通过 TypeSafe 官方 API 提供可选对比，本地 GS1 无需云 API key。
 
 ![GS1 Playground](../assets/playground.png)
 
@@ -44,14 +44,13 @@ npm run dev
 
 端口 5173 的 Vite 将请求代理到端口 3000 的 Node 服务。`npm start -- --host 127.0.0.1 --port 3000 --backends-config backends.yaml --default-backend gs1_local` 可指定服务参数，前端修改后需重新构建。
 
-## 行为
+## Query
 
-- **Query**：编辑状态与混合 Choice／Noul／Score，或完整请求。结构化字段不丢失；Overview 展示供应商概率，JSON 保留原始响应。Cmd／Ctrl+Enter 执行，Cancel 取消。
-- **Go**：支持 5×5、7×7、9×9，由模型选择合法落子；控制器执行提子、自杀和位置超级劫检查，所有交叉点归属已确定或为中立时结束，不虚构 pass 或胜负。
-- **Maze**：带种子的完美迷宫，仅提供相邻可通行方向，由模型逐步选择。120 次调用后暂停，不自动判定成功。
-- **Snake**：提供原始棋盘，以一个 Choice、两个 Noul 决策。可选执行 guard 可能改写建议动作；界面和日志分别记录建议与执行，guarded 成绩不作为无辅助模型策略成绩。
+在分栏编辑器中输入状态与混合 Choice／Noul／Score 问题，或直接提交完整请求。文本与结构化 JSON 均完整保留。示例覆盖多项选择、有序评分和简历筛选。
 
-Run／Step／Pause 保留正在执行请求的所有权，避免陈旧响应推动游戏。延迟为 Node 上游往返与校验，不含浏览器渲染。Jev 原始概率、明确审计的舍入归一化与控制器使用值分别保留。
+点击 **Run query** 或按 Cmd／Ctrl+Enter 执行请求；**Cancel** 可取消正在等待的调用。模型选择器支持本地 GS1 和 TypeSafe 官方 Jev API。Overview 展示各类原语的概率与置信度，JSON 保留原始响应。
+
+延迟为 Node 上游往返与校验耗时，不含浏览器渲染。Jev 原始概率与经过审计的舍入归一化结果，与经校验的响应分别保留。
 
 ## 验证
 
@@ -62,4 +61,4 @@ npm run build
 npm run test:e2e
 ```
 
-浏览器测试使用 fixture，真实 GS1 联通另行检查。源码位于本目录；`dist/`、日志和浏览器产物保持忽略。
+浏览器测试使用 Query fixture。可选的真实 Jev 测试需要配置 `TYPESAFE_API_KEY` 并设置 `GS1_LIVE=1`。源码位于本目录；`dist/`、日志和浏览器产物保持忽略。

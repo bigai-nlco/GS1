@@ -54,7 +54,7 @@ Exit status: 0 complete valid predictions; 1 prediction failures; 2 invalid conf
 
 ## Inference latency
 
-Compare HF default `model.decide`, GS1 eager and numerically checked CUDA Graph execution with identical weights, inputs and precision:
+Compare GS1 Default (`model.decide`), GS1 eager and numerically checked CUDA Graph execution with identical weights, inputs and precision:
 
 ```bash
 uv sync --locked --extra serve --extra eval --extra cuda

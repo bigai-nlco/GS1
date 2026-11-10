@@ -4,16 +4,17 @@
 
 ![GS1 — Fast, Faithful, Frontier](assets/banner.svg)
 
-**Fast, Faithful, Frontier.**
-GS1 maps state and runtime-defined questions directly to **Choice**, **Noul**, and **Score** distributions. A native cross-attention decision head reads evidence for the supplied candidates; inference produces zero generated output tokens.
+> ***Fast, Faithful, Frontier System One Intelligence.***
 
-[Models](https://huggingface.co/collections/bigai/gs1) · [Quick start](#quick-start) · [Results](benchmark/results.md) · [Playground](playground/README.md) · [Architecture](docs/model.md) · [Documentation](docs/README.md)
+GS1 is a family of fast, uncertainty-aware, open-source decision models developed by **BIGAI** (Beijing Institute for General Artificial Intelligence). It computes native probability distributions over variable candidate sets for agent routing, verification, extraction, and control.
+
+[Models](https://huggingface.co/collections/bigai/gs1) · [Playground](playground/README.md) · [Documentation](docs/README.md) · [Technical Report]()
 
 ## Highlights
 
 - **A decision head that retrieves evidence.** Native multi-head cross-attention queries state evidence for runtime-defined candidates. With context and input representations fixed, head-level probabilities remain identical after a candidate permutation is undone. [Architecture](docs/model.md#backbone-and-evidence-retrieval)
 - **Full comparisons, reusable prefixes.** Causal Gated DeltaNet and segmented bidirectional full attention give candidates their complete comparison context while preserving immutable prefixes for reuse across questions. Carry-preserving **AttnRes** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor.
-- **Fast — native decisions, zero decoding.** One joint distribution directly yields **Choice** candidate probabilities, **Noul** true/false verification and **Score** expected ordinal values. With CUDA Graph, GS1-0.8B reaches **12.51 ms P50** for one short question and **6.05×** speedup over HF default inference for eight short questions. [Measurements](benchmark/latency.md)
+- **Fast — native decisions, zero decoding.** One joint distribution directly yields **Choice** candidate probabilities, **Noul** true/false verification and **Score** expected ordinal values. With CUDA Graph, GS1-0.8B reaches **12.51 ms P50** for one short question and **6.05×** speedup over GS1 Default inference for eight short questions. [Measurements](benchmark/latency.md)
 - **Faithful — learn the probability used to act.** CRPO optimizes the sampled action's actual probability with a Brier reward. Native distributions and confidence expose uncertainty so applications can defer a decision, seek evidence or select an explicit abstention option. [Probability and confidence](docs/api.md#confidence)
 - **Frontier — compact models, competitive quality.** GS1-4B scores **68.95** in the report's public comparison snapshot, **8.25 points above Jev 1.14**. All four GS1 scales sit on the displayed parameter–performance frontier. [Results](#models-and-results)
 
@@ -42,7 +43,7 @@ New full-split measurements, 9 November 2026:
 
 ## Quick start
 
-### Hugging Face default inference
+### Default Inference
 
 Python 3.11+. Install the model folder's `requirements.txt`, or the corresponding PyTorch, Transformers 5.3.0, Accelerate, safetensors, Pydantic, TypeSafe SDK and Pillow dependencies. **The `gs1` repository is not required.** Choose a release folder or its published Hub ID.
 
@@ -137,13 +138,13 @@ print(result.scores["urgency"].score)
 
 Fresh measurements of the current release:
 
-| Model | HF default P50 | GS1 eager P50 | CUDA Graph P50 / P95 | Speedup | Graph allocated |
+| Model | GS1 Default P50 | GS1 eager P50 | CUDA Graph P50 / P95 | Speedup | Graph allocated |
 |---|---:|---:|---:|---:|---:|
 | GS1-0.8B | 54.10 ms | 54.60 ms | **12.51 / 13.22 ms** | 4.32× | 4.07 GiB |
 | GS1-2B | 53.95 ms | 54.34 ms | **18.64 / 18.69 ms** | 2.89× | 10.60 GiB |
 | GS1-4B | 72.87 ms | 73.84 ms | **35.17 / 35.24 ms** | 2.07× | 23.68 GiB |
 
-RTX 4090 reporting 48 GiB, BF16 computation, **256 tokens / one question**, five warmups and 30 timed calls per group. These are **complete in-process decision calls**, including validation, prompt compilation, model execution, probabilities and typed responses; model loading, graph capture, HTTP and SDK transport are excluded. Speedup compares P50 against HF default inference at identical weights and inputs. Stored weight dtypes are preserved.
+RTX 4090 reporting 48 GiB, BF16 computation, **256 tokens / one question**, five warmups and 30 timed calls per group. These are **complete in-process decision calls**, including validation, prompt compilation, model execution, probabilities and typed responses; model loading, graph capture, HTTP and SDK transport are excluded. GS1 Default uses the standalone model's `model.decide` path; speedup compares its P50 with CUDA Graph at identical weights and inputs. Stored weight dtypes are preserved.
 
 ![GS1 inference latency across sizes and request shapes](assets/inference-latency.svg)
 
@@ -160,7 +161,7 @@ CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
 
 ![GS1 Playground](assets/playground.png)
 
-Real GS1-0.8B decisions through the default eager path: three questions, with Node/HTTP round-trip latency on a shared GPU. The performance table uses its separately stated benchmark settings. [Reproduce this request](examples/playground.json).
+The Query workspace shows sample Choice/Noul/Score answers, raw JSON and per-request round-trip latency. [Example request](examples/playground.json).
 
 ```bash
 cd playground
@@ -169,7 +170,7 @@ npm run build
 npm start
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 8000. Explore **Query, Go, Maze and Snake** with probabilities and raw JSON side by side. GS1 is the default backend. For hosted Jev, export `TYPESAFE_API_KEY` on the Node server to call the official TypeSafe API. [Setup and controls](playground/README.md)
+Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 8000. Use **Query** to edit state and questions, compare probabilities and inspect raw JSON. GS1 is the default backend. For hosted Jev, export `TYPESAFE_API_KEY` on the Node server to call the official TypeSafe API. [Setup and controls](playground/README.md)
 
 ## How GS1 decides
 
@@ -179,7 +180,7 @@ GS1 combines Qwen3.5 hybrid sequence mixing, **segmented bidirectional full atte
 
 ## Documentation and citation
 
-[Model](docs/model.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Evaluation](benchmark/README.md) · [Contributing](CONTRIBUTING.md)
+[Model](docs/model.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Evaluation](benchmark/README.md)
 
 Code: [Apache-2.0](LICENSE). Model-weight licenses are stated separately in each model card. This release contains model architecture, inference, serving, demonstrations and evaluation.
 

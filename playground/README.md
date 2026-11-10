@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-The React client and Node server expose **Query, Go, Maze and Snake** through the same typed-decision backend. GS1 is selected by default. Jev is available through the official TypeSafe API for comparison; no cloud key is needed for local GS1.
+The React client and Node server provide a **Query** workspace for typed decisions. GS1 is selected by default. Jev is available through the official TypeSafe API for comparison; no cloud key is needed for local GS1.
 
 ![GS1 Playground](../assets/playground.png)
 
@@ -44,14 +44,13 @@ npm run dev
 
 Vite on port 5173 proxies the Node API on port 3000. `npm start -- --host 127.0.0.1 --port 3000 --backends-config backends.yaml --default-backend gs1_local` sets the server options. Rebuild after frontend changes.
 
-## Behavior
+## Query
 
-- **Query:** edit state plus mixed Choice/Noul/Score questions, or a full request. Structured fields round-trip intact. Overview shows provider probabilities; JSON retains the raw response. Cmd/Ctrl+Enter runs and Cancel aborts a pending request.
-- **Go:** 5×5, 7×7 or 9×9; the model selects legal placements. The controller enforces captures, suicide prevention and positional superko. Completion requires every point to have settled ownership or neutral status. No pass or winner is manufactured.
-- **Maze:** seeded perfect mazes; only unblocked adjacent moves are offered. The model selects each step. A 120-call run limit pauses without declaring success.
-- **Snake:** raw board observations with one Choice and two Noul questions. The optional execution guard can override a proposed action; the UI/log records proposed and executed actions separately. Guarded outcomes are not presented as unaided model policy performance.
+Edit state and mixed Choice/Noul/Score questions in split editors, or supply a full request. Text and structured JSON round-trip intact. Examples cover multiple choice, ordinal scoring and resume screening.
 
-Run/Step/Pause controls preserve in-flight ownership and prevent stale responses from moving a game. Latency is the Node server's upstream round trip plus validation, excluding browser rendering. Raw Jev probabilities and its explicitly audited rounding normalization are retained separately from controller values.
+Use **Run query** or Cmd/Ctrl+Enter to evaluate the request; **Cancel** aborts a pending call. The model selector switches between local GS1 and the official TypeSafe Jev API. Overview shows each primitive's probabilities and confidence; JSON preserves the raw response.
+
+Latency measures the Node server's upstream round trip plus validation, excluding browser rendering. Raw Jev probabilities and their audited rounding normalization remain separate from the validated response.
 
 ## Validation
 
@@ -62,4 +61,4 @@ npm run build
 npm run test:e2e
 ```
 
-Browser tests use fixtures; a live local GS1 check is separate. Source stays in this folder, generated `dist/`, logs and browser artifacts stay ignored.
+Browser tests use Query fixtures. Optional live Jev checks require a configured `TYPESAFE_API_KEY` and `GS1_LIVE=1`. Source stays in this folder, generated `dist/`, logs and browser artifacts stay ignored.

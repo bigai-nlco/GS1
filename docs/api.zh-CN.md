@@ -79,4 +79,4 @@ Score 分布 `[0.25, 0.5, 0.25]` 的分数为 1、置信度为 0.25。公开置�
 
 格式错误和超预算输入明确报错。队列满时返回 529 与 `Retry-After`，超时返回 504。调用者取消后不再投递响应，GPU 资源仍安全回收。评测默认零重试并记录失败；应用重试由客户端决定。
 
-Python 服务执行本地 GS1 推理；Node playground 可通过 `TYPESAFE_API_KEY` 调用 TypeSafe 官方 Jev API，凭据仅保留在 Node 服务端，原始供应商响应与用于控制器执行的校验响应分别保存。[Playground 配置](../playground/README.zh-CN.md#通过-typesafe-官方-api-使用-jev)。
+Python 服务执行本地 GS1 推理；Node playground 可通过 `TYPESAFE_API_KEY` 调用 TypeSafe 官方 Jev API，凭据仅保留在 Node 服务端，原始供应商响应与经校验的响应分别保存。[Playground 配置](../playground/README.zh-CN.md#通过-typesafe-官方-api-使用-jev)。

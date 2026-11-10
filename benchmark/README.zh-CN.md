@@ -54,7 +54,7 @@ Choice／Score 使用 argmax，按固定 benchmark 约定处理并列；只有�
 
 ## 推理时延
 
-当前代码的时延评测比较相同权重、输入和精度下的 HF 默认 `model.decide`、GS1 eager 与经过数值校验的 CUDA Graph：
+当前代码的时延评测比较相同权重、输入和精度下的 GS1 默认 `model.decide`、GS1 eager 与经过数值校验的 CUDA Graph：
 
 ```bash
 uv sync --locked --extra serve --extra eval --extra cuda

@@ -8,9 +8,9 @@ All **12 shape qualifications passed**, with **zero measured logit drift and pro
 
 ![Current release latency](../assets/inference-latency.svg)
 
-All latency values below are **milliseconds**. P50/P95 are sample quantiles; speedup is HF default P50 divided by CUDA Graph P50. Complete raw samples, P99, throughput, software hashes, checkpoint identity and qualification checks are in [the JSON record](results/inference-latency.json).
+All latency values below are **milliseconds**. P50/P95 are sample quantiles; speedup is GS1 Default P50 divided by CUDA Graph P50. Complete raw samples, P99, throughput, software hashes, checkpoint identity and qualification checks are in [the JSON record](results/inference-latency.json).
 
-| Model | Longest branch | Questions | HF default P50 / P95 | GS1 eager P50 / P95 | CUDA Graph P50 / P95 | Speedup | Graph allocated / reserved |
+| Model | Longest branch | Questions | GS1 Default P50 / P95 | GS1 eager P50 / P95 | CUDA Graph P50 / P95 | Speedup | Graph allocated / reserved |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | GS1-0.8B | 256 | 1 | 54.10 / 54.36 | 54.60 / 55.53 | **12.51 / 13.22** | 4.32× | 4.07 / 4.21 GiB |
 | GS1-0.8B | 256 | 8 | 422.88 / 428.70 | 436.52 / 441.17 | **69.95 / 70.61** | 6.05× | 4.08 / 4.38 GiB |
@@ -25,13 +25,13 @@ All latency values below are **milliseconds**. P50/P95 are sample quantiles; spe
 | GS1-4B | 1,024 | 1 | 105.17 / 105.28 | 118.52 / 118.67 | **86.30 / 86.41** | 1.22× | 23.69 / 25.12 GiB |
 | GS1-4B | 1,024 | 8 | 673.43 / 676.56 | 939.46 / 942.40 | **754.28 / 755.02** | 0.89× | 23.73 / 25.95 GiB |
 
-The short 0.8B graph call reaches **12.51 ms P50**, with **4.32×** speedup over HF default inference. The same size reaches **6.05×** on eight short questions. Benefits depend on shape: 4B at 1,024 tokens/eight questions takes **754.28 ms** with graphs versus **673.43 ms** through HF default inference, a **0.89×** ratio. Use the measured path that fits the workload.
+The short 0.8B graph call reaches **12.51 ms P50**, with **4.32×** speedup over GS1 Default inference. The same size reaches **6.05×** on eight short questions. Benefits depend on shape: 4B at 1,024 tokens/eight questions takes **754.28 ms** with graphs versus **673.43 ms** through GS1 Default inference, a **0.89×** ratio. Use the measured path that fits the workload.
 
 ## What is timed
 
-- `hf_eager`: `model.decide(state, questions)` from the same native implementation distributed in the independent HF folders.
-- `gs1_eager`: `Engine.evaluate` on the unbatched native reference path.
-- `gs1_cuda_graph`: the reference engine with numerically checked native-row arithmetic, compatible question batching and resident CUDA Graph replay.
+- **GS1 Default** (`hf_eager`): `model.decide(state, questions)` from the same native implementation distributed in the independent HF folders.
+- **GS1 eager** (`gs1_eager`): `Engine.evaluate` on the unbatched native reference path.
+- **GS1 CUDA Graph** (`gs1_cuda_graph`): the reference engine with numerically checked native-row arithmetic, compatible question batching and resident CUDA Graph replay.
 
 All paths share one loaded model object and identical inputs. Timers include validation, prompt compilation, forward computation, probability/confidence calculations, CPU answer materialization and typed-response construction. CUDA synchronizes around each call. Timers exclude weight loading, graph capture, network transport, SDK overhead and serialization to HTTP. This is a warm in-process decision measurement, not an HTTP round-trip measurement.
 
