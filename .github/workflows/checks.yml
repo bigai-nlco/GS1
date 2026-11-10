@@ -21,7 +21,8 @@ jobs:
       - run: ruff format --check gs1 benchmark tests scripts examples
       - run: python -m pytest -q
   playground:
-    runs-on: ubuntu-latest
+    # Keep the runner compatible with the pinned Playwright 1.55.1 release.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
