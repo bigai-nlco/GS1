@@ -8,15 +8,21 @@
 
 GS1 是北京通用人工智能研究院开发的开源决策模型系列，具备快速决策与不确定性感知能力。它直接计算可变候选集合上的原生概率分布，用于智能体路由、验证、信息抽取和控制。
 
-[模型集合](https://huggingface.co/collections/bigai/gs1) · [Playground](playground/README.zh-CN.md) · [文档](docs/README.zh-CN.md) · [技术报告]()
+[代码](https://github.com/bigai-nlco/GS1) · [模型](https://huggingface.co/collections/bigai/gs1) · [文档](docs/README.zh-CN.md) · [Playground](playground/README.zh-CN.md)
 
-## Highlights
+## GS1 亮点
 
-- **用原生决策头检索证据。** 多头交叉注意力为运行时定义的候选项查询状态证据。在上下文与输入表示固定时，打乱候选项再还原顺序，决策头输出的概率保持一致。[模型架构](docs/model.zh-CN.md#骨干与证据检索)
-- **完整比较，复用前缀。** 因果 Gated DeltaNet 与分段双向全注意力让候选项读取完整比较上下文，同时保持共享前缀不变，供不同问题复用。保留 carry 的 **AttnRes** 在稀疏全注意力接收层查询早期表示，并保留显式跳跃连接的锚点。
-- **Fast — 原生决策，零文本解码。** 一个联合分布直接给出 **Choice** 候选概率、**Noul** 真伪判断和 **Score** 有序等级期望。采用 CUDA Graph，GS1-0.8B 的单个短问题调用 **P50 为 12.51 ms**；八个短问题相对 GS1 默认推理加速 **6.05×**。[实测数据](benchmark/latency.md)
-- **Faithful — 学习真正用于行动的概率。** CRPO 用采样动作的真实概率计算 Brier 奖励；原生分布与置信度向应用暴露不确定性，支持延后判断、补充证据或选择显式拒答选项。[概率与置信度](docs/api.zh-CN.md#置信度)
-- **Frontier — 紧凑规模，出色决策质量。** 最新公开文本评测中，GS1-4B 得分 **68.97**，比 Jev 1.14 高 **8.27 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型与成绩](#模型与成绩)
+- **Fast — 原生运行时决策头。**
+  - 直接输出 Choice、Noul、Score 分布，生成输出 token 数为零。
+  - 原生多头交叉注意力决策头使用问题和候选表示查询状态证据。
+  - 采用 CUDA Graph，GS1-0.8B 的单个短问题调用 P50 为 12.51 ms；八个短问题相对默认推理加速 **6.05×**。
+- **Faithful — 多步强化学习与校准奖励。**
+  - 强化学习用采样动作的真实概率计算 Brier 奖励。[RLCD](docs/RLCD.zh-CN.md)
+  - 原生概率与置信度支持补充证据、延后判断和显式拒答选项。
+- **Frontier — 混合架构，出色质量。**
+  - **因果 Gated DeltaNet** 和 **分段双向全注意力** 让候选项获得完整比较上下文，同时保持不可变前缀，供不同问题复用。
+  - 保留 carry 的 **Attention Residual** 让稀疏全注意力接收层查询早期表示，并保留显式跳跃连接锚点。[模型架构](docs/model.zh-CN.md)
+  - GS1-4B 在最新 Decision Index 0.4.1 Public index 中获得 **68.97** 分；所有 GS1 尺寸均位于图示模型的参数量—性能前沿。
 
 ## 模型与成绩
 
@@ -33,19 +39,10 @@ GS1 是北京通用人工智能研究院开发的开源决策模型系列，具�
 
 ![GS1 参数量—性能 Pareto 前沿](assets/gs1_pareto_frontier.svg)
 
-完整测试集测量：
-
-| Benchmark | Decisions | GS1-0.8B | GS1-2B | GS1-4B |
-|---|---:|---:|---:|---:|
-| JevBench public | 231 | 77.92% | 80.09% | 86.15% |
-| AG News | 7,600 | 90.99% | 91.83% | 92.01% |
-| ToolACE selection | 640 | 93.28% | 93.91% | 94.22% |
-
-[查看全部 37 项分数、五个领域、AA 组件、Brier、ECE 和来源 →](benchmark/results.md)
 
 ## 快速开始
 
-### 默认推理
+### Hugging Face Transformers
 
 需要 Python 3.11+。安装模型目录中的 `requirements.txt`，或对应的 PyTorch、Transformers 5.3.0、Accelerate、safetensors、Pydantic、TypeSafe SDK 和 Pillow 依赖。**无需安装或调用 `gs1` 仓库**。输入可使用本地发布目录，也可使用已上传的 Hub ID。
 
@@ -54,34 +51,47 @@ python -m pip install torch==2.9.1 torchvision==0.24.1 transformers==5.3.0 accel
 ```
 
 ```python
+import torch
 from transformers import AutoModel
 
 model = (
     AutoModel.from_pretrained(
-        "/path/to/GS1-0.8B",  # or a published bigai/GS1-0.8B Hub ID
+        "bigai/GS1-0.8B",
         trust_remote_code=True,
     )
     .eval()
     .to("cuda")
 )
 
-result = model.decide(
-    state="A customer was charged twice and requests a refund.",
-    questions={
+request = {
+    "state": "客户被重复扣费，要求尽快退款。",
+    "questions": {
         "team": {
             "type": "choice",
-            "instructions": "Which team should handle this ticket?",
-            "criteria": {"billing": "Payments and refunds", "technical": "Software problems"},
+            "instructions": "哪个团队应处理这张工单？",
+            "criteria": {"billing": "支付和退款", "technical": "软件问题"},
         },
-        "refund": {"type": "noul", "instructions": "Does the customer request a refund?"},
+        "refund": {"type": "noul", "instructions": "客户是否要求退款？"},
+        "urgency": {
+            "type": "score",
+            "instructions": "评估处理这张工单的紧急程度。",
+            "criteria": ["常规", "尽快", "立即"],
+        },
     },
-)
+}
+
+with torch.autocast("cuda", dtype=torch.bfloat16, cache_enabled=False):
+    result = model.decide(**request, precision="bf16")
+
 print(result["answers"])
+print(result["usage"])
 ```
 
 结果包含 `model`、`answers`、`usage`，每个候选项都有概率。[完整三类型示例](examples/quickstart.py) · [请求 JSON](examples/request.json)
 
-### GS1 优化运行时
+发布的 `chat_template.jinja` 与编译器共用序列化逻辑，直接生成包含 state、question 和 options 的原生 GS1 提示。`model.decide` 负责类型化候选处理和分支元数据。[原生模板用法](docs/inference.zh-CN.md#原生决策模板)
+
+### GS1 运行时
 
 采用 Linux/CUDA、Python 3.11+、PyTorch 2.9.1 和 Transformers 5.3.0：
 
@@ -92,7 +102,7 @@ uv sync --locked --extra serve --extra cuda
 ```
 
 ```bash
-uv run gs1 serve --model /path/to/GS1-0.8B --model-name GS1
+uv run gs1 serve --model bigai/GS1-0.8B --model-name GS1
 ```
 
 服务提供 `POST /v1/systemone` 和 `GET /v1/models`。[启用经过校验的 CUDA Graph 推理](docs/inference.zh-CN.md#cuda-graph-推理)，或通过 `from gs1 import Engine` 在进程内调用。优化运行时与 HF 模型共享架构计算和类型化输出定义。
@@ -114,16 +124,16 @@ with TypeSafeClient(
     model="GS1",
 ) as client:
     result = client.system_one(
-        state="A customer was charged twice and requests a refund.",
+        state="客户被重复扣费，要求尽快退款。",
         questions={
             "team": Choice(
-                instructions="Which team should handle this ticket?",
-                criteria={"billing": "Payments and refunds", "technical": "Software problems"},
+                instructions="哪个团队应处理这张工单？",
+                criteria={"billing": "支付和退款", "technical": "软件问题"},
             ),
-            "refund": Noul(instructions="Does the customer request a refund?"),
+            "refund": Noul(instructions="客户是否要求退款？"),
             "urgency": Score(
-                instructions="Rate urgency.",
-                criteria=["Routine", "Soon", "Immediate"],
+                instructions="评估处理这张工单的紧急程度。",
+                criteria=["常规", "尽快", "立即"],
             ),
         },
     )
@@ -154,7 +164,7 @@ print(result.scores["urgency"].score)
 # 在源码仓库中运行，覆盖 256／1,024-token、单／八问题输入。
 uv sync --locked --extra serve --extra cuda --extra eval
 CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
-  --model /path/to/GS1-0.8B --out runs/latency/GS1-0.8B.json
+  --model bigai/GS1-0.8B --out runs/latency/GS1-0.8B.json
 ```
 
 [全部形状、P50／P95／P99、显存与测量方法](benchmark/latency.md) · [原始样本](benchmark/results/inference-latency.json) · [先前的服务／IPC 与副本测量](benchmark/results.md#latency-and-memory)
@@ -182,9 +192,11 @@ GS1 结合 Qwen3.5 混合序列建模、**分段双向全注意力**、**保留 
 
 ## 文档与引用
 
-[模型](docs/model.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [评测](benchmark/README.zh-CN.md)
+[模型](docs/model.zh-CN.md) · [RLCD](docs/RLCD.zh-CN.md) · [推理](docs/inference.zh-CN.md) · [API](docs/api.zh-CN.md) · [评测](benchmark/README.zh-CN.md)
 
-代码采用 [Apache-2.0](LICENSE)；权重许可单独列在模型卡中。本次发布包含模型架构、推理、服务、演示与评测。
+代码与发布模型权重采用 [Apache-2.0](LICENSE)。
+
+如果本工作对您有帮助，欢迎引用。
 
 ```bibtex
 @techreport{zheng2026gs1,

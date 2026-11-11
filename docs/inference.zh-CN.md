@@ -8,6 +8,28 @@
 
 默认路径为每个问题编译一条完整分支，独立执行；同一问题的候选项一起评分。保留序列化的决策头计算精度，最终概率归约使用 FP32，不生成文本。
 
+## 原生决策模板
+
+`chat_template.jinja` 为单个问题生成完整的 GS1 决策提示，由 [`compiler.py`](../gs1/model/compiler.py) 中的序列化逻辑导出。将原始 state 放入一条 user 消息，通过 `question` 传入问题指令，通过 `options` 传入规范化后的候选描述：
+
+```python
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bigai/GS1-0.8B", trust_remote_code=True)
+prompt = tokenizer.apply_chat_template(
+    [{"role": "user", "content": "客户被重复扣费。"}],
+    question="哪个团队应处理这张工单？",
+    options=["billing: 支付和退款", "technical: 软件问题"],
+    add_generation_prompt=True,
+    enable_thinking=False,
+    tokenize=False,
+)
+```
+
+Choice 候选格式为 `candidate_id: description`；Noul 按 false／true 排列；Score 按 rubric 等级顺序排列。结构化值使用规范 JSON，文本经过 XML 转义。模板包含训练时的 user／assistant 边界、空 thinking 前缀和末尾 `<|decide|>`。运行时加载旧版 GS1 tokenizer 文件时也会应用此原生模板。
+
+执行决策使用 `model.decide` 或 `Engine.evaluate`，这些入口完成类型化候选规范化，以及必需的 token 范围、掩码、位置和预算检查。模板或编译器代码变更后需重新生成已有 runtime profile，因为 profile 同时绑定源码和输入编码文件。
+
 ## 原生 Engine
 
 ```python

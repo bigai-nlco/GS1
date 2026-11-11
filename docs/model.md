@@ -2,7 +2,7 @@
 
 [English](model.md) · [简体中文](model.zh-CN.md)
 
-The canonical architecture is [`modular_gs1.py`](../gs1/model/modular_gs1.py). `GS1Config`, `GS1PretrainedModel`, `GS1TextModel` and `GS1Model` retain a native Transformers-style hierarchy. The same source is distributed in each Hugging Face model folder. `compiler.py` contains prompt compilation and branch execution; `schema.py` contains typed decisions, calibration, probability and confidence calculations; `util.py` contains checkpoint loading, serialization and identities. Native GDN prefix state and chunk continuation are defined here too, so the standalone model has no dependency on the optimized runtime. Tensor-tree copying, slicing and batching belong to `gs1.inference.state`; accelerated arithmetic belongs to `gs1.inference.arithmetic`.
+The canonical architecture is [`modular_gs1.py`](../gs1/model/modular_gs1.py). `GS1Config`, `GS1PretrainedModel`, `GS1TextModel` and `GS1Model` retain a native Transformers-style hierarchy. The same source is distributed in each Hugging Face model folder. `compiler.py` defines prompt serialization, exports `chat_template.jinja`, normalizes candidates, compiles branch metadata and executes branches; `schema.py` contains typed decisions, calibration, probability and confidence calculations; `util.py` contains checkpoint loading, serialization and identities. Native GDN prefix state and chunk continuation are defined here too, so the standalone model has no dependency on the optimized runtime. Tensor-tree copying, slicing and batching belong to `gs1.inference.state`; accelerated arithmetic belongs to `gs1.inference.arithmetic`.
 
 ## Backbone and evidence retrieval
 
@@ -19,19 +19,22 @@ GS1 uses Qwen3.5 text and vision operators. It owns `language_model.*`, `visual.
 
 Question and option spans use the fixed compiler pooling rule: with bidirectionality, average opening delimiter, mean content and closing delimiter; causal pooling uses content and closing delimiter. User text is XML-escaped. The dedicated structural tokens are `<state>`, `</state>`, `<question>`, `</question>`, `<option>`, `</option>` and `<|decide|>`.
 
+The native Jinja template serializes state, question and normalized options, including XML escaping, the trained user/assistant boundaries, the empty no-thinking prefix and the terminal `<|decide|>` token. The compiler uses this same template and retains token spans, roles, positions and budget checks. Its token sequence matches the original compiled Qwen3.5 prompt. [Direct template usage](inference.md#native-decision-template)
+
 Head-level permutation equivalence holds when candidate order is restored and the input representations are fixed. The full backbone also uses positions and causal GDN, so this property does not imply complete-model option-order invariance.
 
 ## Published configurations
 
-| Family | Stored parameters | Hidden width | Decoder layers | Decision heads |
-|---|---:|---:|---:|---:|
-| GS1-0.8B | 879,765,056 | 1,024 | 24 | 4 |
-| GS1-2B | 2,319,227,200 | 2,048 | 24 | 8 |
-| GS1-4B | 4,704,520,192 | 2,560 | 32 | 10 |
+| Family | Stored parameters | Hidden width | Decoder layers | Decision heads | Decision projection | Branch token limit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| GS1-0.8B | 879,765,056 | 1,024 | 24 | 4 | 256 | 65,536 |
+| GS1-2B | 2,319,227,200 | 2,048 | 24 | 8 | 256 | 65,536 |
+| GS1-4B | 4,704,520,192 | 2,560 | 32 | 10 | 256 | 65,536 |
+| GS1-9B | 8,829,078,768 | 4,096 | 32 | 16 | 2,048 | 32,768 |
 
-All three have two candidate-routing layers and a 256-dimensional final comparison space. Read the checkpoint's own `config.json`; do not replace its settings with one global architecture preset.
+All four checkpoints have two candidate-routing layers. GS1-0.8B, GS1-2B and GS1-4B use a 256-dimensional final comparison space; GS1-9B uses 2,048 dimensions. Each checkpoint's `config.json` defines its architecture and admission budgets.
 
-The serving exports permit 65,536 tokens per complete branch, 512 questions, and 131,072 logical request tokens. Actual supported shapes also depend on execution and memory budgets. The default HTTP service uses tighter admission limits; see [inference budgets](inference.md#budgets-and-measurements). The complete public evaluation used 32k branch limits. The retained vision tower uses the complete-branch path; the reported decision benchmarks are text-only.
+GS1-0.8B, GS1-2B and GS1-4B admit up to 65,536 tokens per complete branch; GS1-9B admits 32,768. All four permit 512 questions and 131,072 logical request tokens per request. Actual supported shapes also depend on execution and memory budgets. The default HTTP service uses tighter admission limits; see [inference budgets](inference.md#budgets-and-measurements). The complete public evaluation used 32k branch limits. The retained vision tower uses the complete-branch path; the reported decision benchmarks are text-only.
 
 ## Precision and output
 
@@ -45,4 +48,4 @@ Choice returns the first maximum in request order with all candidate probabiliti
 
 Use `AutoModel.from_pretrained(..., trust_remote_code=True)` for a standalone model folder, or `GS1Model.from_pretrained(...)` after installing GS1. Both accept local directories and Hub IDs. `revision`, `local_files_only`, `cache_dir` and token-based Hub access are supported. Single-device loading is explicit; automatic device sharding is not exposed by this loader.
 
-`save_pretrained` writes standard safetensors shards, configuration and AutoClass code. Include the tokenizer/processor assets in a complete inference folder. Architecture, structural token IDs and `inference_limits` live in `config.json`; no separate serving manifest is required. Original tensor keys and dtypes round-trip exactly. The optimized runtime computes checkpoint identity from the actual weights, configuration and input-encoding assets when loading.
+`save_pretrained` writes standard safetensors shards, configuration, AutoClass code and the native `chat_template.jinja` generated from `compiler.py`. Include the tokenizer/processor assets in a complete inference folder. Architecture, structural token IDs and `inference_limits` live in `config.json`; no separate serving manifest is required. Original tensor keys and dtypes round-trip exactly. The optimized runtime computes checkpoint identity from the actual weights, configuration and input-encoding assets when loading.

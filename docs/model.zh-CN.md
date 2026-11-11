@@ -2,7 +2,7 @@
 
 [English](model.md) · [简体中文](model.zh-CN.md)
 
-标准架构实现位于 [`modular_gs1.py`](../gs1/model/modular_gs1.py)。`GS1Config`、`GS1PretrainedModel`、`GS1TextModel`、`GS1Model` 保留原生 Transformers 风格的继承结构；同一源码随每个 HF 模型目录分发。`compiler.py` 集中提示词编译与分支执行，`schema.py` 集中决策类型、校准、概率与置信度计算，`util.py` 集中检查点加载、序列化和身份计算。原生 GDN 前缀状态和分块续算也定义于此，因此独立模型不依赖优化运行时。张量树复制、切片和批处理位于 `gs1.inference.state`，加速算术位于 `gs1.inference.arithmetic`。
+标准架构实现位于 [`modular_gs1.py`](../gs1/model/modular_gs1.py)。`GS1Config`、`GS1PretrainedModel`、`GS1TextModel`、`GS1Model` 保留原生 Transformers 风格的继承结构；同一源码随每个 HF 模型目录分发。`compiler.py` 统一定义提示序列化、导出 `chat_template.jinja`，并负责候选项规范化、分支元数据编译与分支执行；`schema.py` 集中决策类型、校准、概率与置信度计算，`util.py` 集中检查点加载、序列化和身份计算。原生 GDN 前缀状态和分块续算也定义于此，因此独立模型不依赖优化运行时。张量树复制、切片和批处理位于 `gs1.inference.state`，加速算术位于 `gs1.inference.arithmetic`。
 
 ## 骨干与证据检索
 
@@ -19,19 +19,22 @@ GS1 复用 Qwen3.5 文本与视觉算子，直接持有 `language_model.*`、`vi
 
 问题与候选使用固定编译器池化规则：双向模式平均开标签、内容均值、闭标签；因果模式平均内容与闭标签。用户文本经过 XML 转义。七个专用结构 token 为 `<state>`、`</state>`、`<question>`、`</question>`、`<option>`、`</option>`、`<|decide|>`。
 
+原生 Jinja 模板序列化 state、question 和规范化后的 options，统一处理 XML 转义、训练时的 user／assistant 边界、空 thinking 前缀和末尾 `<|decide|>`。编译器使用同一模板，并保留 token 范围、角色、位置和预算检查；生成的 token 序列与原先经过编译的 Qwen3.5 提示一致。[直接使用模板](inference.zh-CN.md#原生决策模板)
+
 在输入表示固定、候选顺序还原时，决策头具有排列等价性；完整骨干还包含位置编码和因果 GDN，因此不能将此性质推广为整个模型对选项顺序不敏感。
 
 ## 发布配置
 
-| 系列 | 实际存储参数 | 隐藏宽度 | Decoder 层数 | 决策注意力头数 |
-|---|---:|---:|---:|---:|
-| GS1-0.8B | 879,765,056 | 1,024 | 24 | 4 |
-| GS1-2B | 2,319,227,200 | 2,048 | 24 | 8 |
-| GS1-4B | 4,704,520,192 | 2,560 | 32 | 10 |
+| 系列 | 实际存储参数 | 隐藏宽度 | Decoder 层数 | 决策注意力头数 | 决策投影维度 | 分支 token 上限 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| GS1-0.8B | 879,765,056 | 1,024 | 24 | 4 | 256 | 65,536 |
+| GS1-2B | 2,319,227,200 | 2,048 | 24 | 8 | 256 | 65,536 |
+| GS1-4B | 4,704,520,192 | 2,560 | 32 | 10 | 256 | 65,536 |
+| GS1-9B | 8,829,078,768 | 4,096 | 32 | 16 | 2,048 | 32,768 |
 
-三个检查点均采用两层候选路由和 256 维最终比较空间。请读取各自的 `config.json`，不要用统一默认配置替换已有架构设置。
+四个检查点均采用两层候选路由；GS1-0.8B、GS1-2B 和 GS1-4B 的最终比较空间为 256 维，GS1-9B 为 2,048 维。架构和准入预算以各自的 `config.json` 为准。
 
-发布服务导出允许每条完整分支最多 65,536 token、每请求 512 个问题、逻辑请求总量 131,072 token；实际可用形状还取决于执行和显存预算。HTTP 服务默认采用更紧的准入参数，见[推理预算](inference.zh-CN.md#预算与测量)。完整公开评测使用 32k 分支上限。视觉塔保留完整分支推理路径；本文展示的决策 benchmark 均为纯文本。
+GS1-0.8B、GS1-2B 和 GS1-4B 每条完整分支最多准入 65,536 token，GS1-9B 为 32,768 token；四个模型均允许每请求 512 个问题、逻辑请求总量 131,072 token；实际可用形状还取决于执行和显存预算。HTTP 服务默认采用更紧的准入参数，见[推理预算](inference.zh-CN.md#预算与测量)。完整公开评测使用 32k 分支上限。视觉塔保留完整分支推理路径；本文展示的决策 benchmark 均为纯文本。
 
 ## 精度与输出
 
@@ -45,4 +48,4 @@ Choice 返回按请求顺序取到的首个最大项及完整概率；Noul 返�
 
 独立模型目录使用 `AutoModel.from_pretrained(..., trust_remote_code=True)`；安装 GS1 后也可使用 `GS1Model.from_pretrained(...)`。均支持本地目录和 Hub ID，以及 `revision`、`local_files_only`、`cache_dir` 与 Hub token。单设备放置显式指定；此加载器不提供自动设备切分。
 
-`save_pretrained` 保存标准 safetensors 分片、配置和 AutoClass 代码；完整推理目录还需包含 tokenizer／processor。架构、结构 token ID 和 `inference_limits` 统一保存在 `config.json`，无需独立服务 manifest。权重键及 dtype 严格往返一致；优化运行时加载时，按实际权重、配置和输入编码文件计算检查点身份。
+`save_pretrained` 保存标准 safetensors 分片、配置、AutoClass 代码，以及从 `compiler.py` 生成的原生 `chat_template.jinja`；完整推理目录还需包含 tokenizer／processor。架构、结构 token ID 和 `inference_limits` 统一保存在 `config.json`，无需独立服务 manifest。权重键及 dtype 严格往返一致；优化运行时加载时，按实际权重、配置和输入编码文件计算检查点身份。

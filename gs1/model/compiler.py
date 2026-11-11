@@ -1,10 +1,10 @@
 """Compile typed decisions into XML prompts and execute native decision branches."""
 
 from dataclasses import dataclass, field
-from html import escape
 from pathlib import Path
 
 import torch
+from jinja2 import TemplateError
 
 from .config import INFERENCE_LIMITS, DecisionConfig
 from .schema import DecisionRequest, candidate_ids, noul_descriptions
@@ -18,6 +18,67 @@ DECISION_TOKEN = "<|decide|>"
 NO_THINKING_PREFIX = "<think>\n\n</think>\n\n"
 COMPILER = "xml_decision"
 POSITIONS = "branch_local"
+
+CHAT_TEMPLATE = r"""{# GS1 typed decision prompt. question/options are normalized by Compiler. #}
+{%- macro xml_text(value) -%}
+    {%- set text = value if value is string else value | tojson(ensure_ascii=false, separators=(',', ':'), sort_keys=true) -%}
+    {{- text | replace('&', '&amp;') | replace('<', '&lt;') | replace('>', '&gt;') -}}
+{%- endmacro -%}
+{%- if messages | length != 1 or messages[0]['role'] != 'user' -%}
+    {{- raise_exception('GS1 requires exactly one user message containing the state.') -}}
+{%- endif -%}
+{%- if question is undefined or options is undefined -%}
+    {{- raise_exception('GS1 requires question and options; use model.decide for typed decisions.') -}}
+{%- endif -%}
+{%- if options is string or options is mapping or options is not sequence or not options -%}
+    {{- raise_exception('GS1 options must be a nonempty sequence of candidate descriptions.') -}}
+{%- endif -%}
+{%- if tools or enable_thinking -%}
+    {{- raise_exception('GS1 uses native decisions with the no-thinking prefix.') -}}
+{%- endif -%}
+{%- set state = messages[0]['content'] -%}
+{%- set visual = namespace(enabled=false) -%}
+{%- if state is sequence and state is not string and state is not mapping -%}
+    {%- for item in state -%}
+        {%- if item is mapping and item['type'] == 'image' -%}
+            {%- set visual.enabled = true -%}
+        {%- endif -%}
+    {%- endfor -%}
+{%- endif -%}
+{{- '<|im_start|>user\n<state>\n' -}}
+{%- if visual.enabled -%}
+    {%- for item in state -%}
+        {%- if item is mapping and item['type'] == 'text' and item['text'] is string -%}
+            {{- xml_text(item['text']) -}}
+        {%- elif item is mapping and item | length == 2 and item['type'] == 'image' and item['image'] is string and item['image'].startswith('data:image/') and ';base64,' in item['image'] -%}
+            {{- '<|vision_start|><|image_pad|><|vision_end|>' -}}
+        {%- else -%}
+            {{- raise_exception('Vision state requires text and inline base64 images.') -}}
+        {%- endif -%}
+    {%- endfor -%}
+{%- else -%}
+    {{- xml_text(state) -}}
+{%- endif -%}
+{{- '\n</state>\n<question>\n' -}}
+{{- xml_text(question) -}}
+{{- '\n</question>' -}}
+{%- for option in options -%}
+    {{- '\n<option>\n' -}}
+    {{- xml_text(option) -}}
+    {{- '\n</option>' -}}
+{%- endfor -%}
+{{- '<|im_end|>\n' -}}
+{%- if add_generation_prompt -%}
+    {{- '<|im_start|>assistant\n<think>\n\n</think>\n\n<|decide|>' -}}
+{%- endif -%}
+"""
+
+
+def save_chat_template(directory):
+    """Keep the standalone HF asset identical to the runtime serializer."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "chat_template.jinja").write_text(CHAT_TEMPLATE, encoding="utf-8")
 
 
 def structural_tokens():
@@ -94,6 +155,8 @@ class Compiler:
         processor=None,
     ):
         self.tokenizer = tokenizer
+        # Tokenizer exports and direct rendering use the same native GS1 format.
+        self.tokenizer.chat_template = CHAT_TEMPLATE
         self.decision = DecisionConfig.model_validate(decision or {})
         self.max_context = max_context
         self.max_questions = max_questions
@@ -110,10 +173,6 @@ class Compiler:
         self.xml_tags = {tag: (self.controls[tag],) for tag in XML_TAGS}
         self.xml_newline = tuple(tokenizer.encode("\n", add_special_tokens=False))
         self.no_thinking_ids = no_thinking_token_ids(tokenizer)
-
-    @staticmethod
-    def _xml_text(value):
-        return escape(value if isinstance(value, str) else canonical(value), quote=False)
 
     @staticmethod
     def _visual_state(state):
@@ -178,29 +237,10 @@ class Compiler:
         self.processor.tokenizer = self.tokenizer
         return self.processor
 
-    def _contents(self, state):
-        if not self._visual_state(state):
-            return f"{XML_STATE}\n{self._xml_text(state)}\n{XML_STATE_END}"
-        contents = [{"type": "text", "text": f"{XML_STATE}\n"}]
-        for item in state:
-            if item.get("type") == "text" and isinstance(item.get("text"), str):
-                contents.append({"type": "text", "text": self._xml_text(item["text"])})
-            elif (
-                set(item) == {"type", "image"}
-                and isinstance(item.get("image"), str)
-                and item["image"].startswith("data:image/")
-                and ";base64," in item["image"]
-            ):
-                contents.append(item)
-            else:
-                raise ValueError("Vision state requires text and inline base64 images")
-        return [*contents, {"type": "text", "text": f"\n{XML_STATE_END}"}]
-
     def compile(self, request: DecisionRequest):
         if len(request.questions) > self.max_questions:
             raise ValueError(f"questions exceeds {self.max_questions}")
         visual = self._visual_state(request.state)
-        contents = self._contents(request.state)
         template = self._processor() if visual else self.tokenizer
         branches, candidates, state = [], {}, None
         for qid, question in request.questions.items():
@@ -212,17 +252,18 @@ class Compiler:
                 options = list(noul_descriptions(question))
             else:
                 options = list(question.criteria)
-            prompt = (
-                f"\n{XML_QUESTION}\n{self._xml_text(question.instructions)}\n{XML_QUESTION_END}"
-                + "".join(f"\n{XML_OPTION}\n{self._xml_text(o)}\n{XML_OPTION_END}" for o in options)
-            )
-            content = [*contents, {"type": "text", "text": prompt}] if visual else contents + prompt
-            rendered = template.apply_chat_template(
-                [{"role": "user", "content": content}],
-                add_generation_prompt=True,
-                enable_thinking=False,
-                tokenize=False,
-            )
+            try:
+                rendered = template.apply_chat_template(
+                    [{"role": "user", "content": request.state}],
+                    chat_template=CHAT_TEMPLATE,
+                    question=question.instructions,
+                    options=options,
+                    add_generation_prompt=True,
+                    enable_thinking=False,
+                    tokenize=False,
+                )
+            except TemplateError as error:
+                raise ValueError(str(error)) from error
             payload = None
             if visual:
                 encoded = template(
@@ -233,9 +274,9 @@ class Compiler:
                 token_ids = encoded["input_ids"][0].tolist()
             else:
                 token_ids = self.tokenizer.encode(rendered, add_special_tokens=False)
-            if tuple(token_ids[-len(self.no_thinking_ids) :]) != self.no_thinking_ids:
-                raise ValueError("Chat template changed the no-thinking assistant prefix")
-            token_ids.append(self.controls[DECISION_TOKEN])
+            terminal = (*self.no_thinking_ids, self.controls[DECISION_TOKEN])
+            if tuple(token_ids[-len(terminal) :]) != terminal:
+                raise ValueError("Chat template changed the no-thinking decision prefix")
             markers = self._xml_positions(token_ids, len(ids))
             prefix = markers.pop("prefix_end")
             first_option = markers.pop("first_option")
@@ -253,10 +294,6 @@ class Compiler:
                     in {"input_ids", "attention_mask", "pixel_values", "image_grid_thw", "mm_token_type_ids"}
                 }
                 payload["input_ids"] = torch.tensor([token_ids], dtype=torch.long)
-                for key, fill in (("attention_mask", 1), ("mm_token_type_ids", 0)):
-                    if key in payload:
-                        value = payload[key]
-                        payload[key] = torch.cat((value, torch.full((1, 1), fill, dtype=value.dtype)), dim=-1)
             branches.append(
                 Branch(
                     qid,

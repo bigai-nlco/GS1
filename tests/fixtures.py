@@ -6,10 +6,8 @@ import transformers.models.qwen3_5.modeling_qwen3_5 as qwen
 from tokenizers import AddedToken, Tokenizer, decoders, models, pre_tokenizers
 from transformers import PreTrainedTokenizerFast
 
+from gs1.model.compiler import CHAT_TEMPLATE
 from gs1.model.modular_gs1 import GS1Config
-
-CHAT_TEMPLATE = "{%- for message in messages -%}\n{{- '<|im_start|>' + message.role + '\n' -}}\n{%- if message.content is string -%}\n{{- message.content -}}\n{%- else -%}\n{%- for item in message.content -%}\n{%- if item.type == 'text' -%}{{- item.text -}}\n{%- elif item.type == 'image' -%}{{- '<|vision_start|><|image_pad|><|vision_end|>' -}}\n{%- endif -%}\n{%- endfor -%}\n{%- endif -%}\n{{- '<|im_end|>\n' -}}\n{%- endfor -%}\n{%- if add_generation_prompt -%}\n{{- '<|im_start|>assistant\n' -}}\n{%- if enable_thinking -%}{{- '<think>\n' -}}\n{%- else -%}{{- '<think>\n\n</think>\n\n' -}}\n{%- endif -%}\n{%- endif -%}"
-
 
 PROFILES = {
     "2B": (32, 4, 1, 2),

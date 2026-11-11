@@ -499,6 +499,7 @@ class GS1PretrainedModel(Qwen3_5PreTrainedModel):
                 module.gradient_checkpointing = False
 
     def save_pretrained(self, save_directory, *, state_dict=None, **kwargs):
+        from .compiler import save_chat_template
         from .util import export_state
 
         self.config.decision = self.decision_config.model_dump()
@@ -507,6 +508,7 @@ class GS1PretrainedModel(Qwen3_5PreTrainedModel):
         if hasattr(self, "decision_head"):
             self.config.head_compute_dtype = "bfloat16" if self.decision_head.bf16_compute else "float32"
         kwargs.pop("safe_serialization", None)
+        save_chat_template(save_directory)
         return super().save_pretrained(
             save_directory,
             state_dict=export_state(self, state_dict),

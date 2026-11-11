@@ -8,15 +8,21 @@
 
 GS1 is a family of fast, uncertainty-aware, open-source decision models developed by **BIGAI** (Beijing Institute for General Artificial Intelligence). It computes native probability distributions over variable candidate sets for agent routing, verification, extraction, and control.
 
-[Models](https://huggingface.co/collections/bigai/gs1) · [Playground](playground/README.md) · [Documentation](docs/README.md) · [Technical Report]()
+[Code](https://github.com/bigai-nlco/GS1) · [Model](https://huggingface.co/collections/bigai/gs1) · [Documentation](docs/README.md) · [Playground](playground/README.md)
 
-## Highlights
+## GS1 Highlights
 
-- **A decision head that retrieves evidence.** Native multi-head cross-attention queries state evidence for runtime-defined candidates. With context and input representations fixed, head-level probabilities remain identical after a candidate permutation is undone. [Architecture](docs/model.md#backbone-and-evidence-retrieval)
-- **Full comparisons, reusable prefixes.** Causal Gated DeltaNet and segmented bidirectional full attention give candidates their complete comparison context while preserving immutable prefixes for reuse across questions. Carry-preserving **AttnRes** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor.
-- **Fast — native decisions, zero decoding.** One joint distribution directly yields **Choice** candidate probabilities, **Noul** true/false verification and **Score** expected ordinal values. With CUDA Graph, GS1-0.8B reaches **12.51 ms P50** for one short question and **6.05×** speedup over GS1 Default inference for eight short questions. [Measurements](benchmark/latency.md)
-- **Faithful — learn the probability used to act.** CRPO optimizes the sampled action's actual probability with a Brier reward. Native distributions and confidence expose uncertainty so applications can defer a decision, seek evidence or select an explicit abstention option. [Probability and confidence](docs/api.md#confidence)
-- **Frontier — compact models, competitive quality.** GS1-4B scores **68.97** in the latest public text evaluation, **8.27 points above Jev 1.14**. All four GS1 scales sit on the displayed parameter–performance frontier. [Results](#models-and-results)
+- **Fast - Native Runtime Decision Head.**
+  - Produce Choice, Noul and Score distributions directly, with zero generated output tokens.
+  - A native multi-head cross-attention decision head queries state evidence using question and candidate representations.
+  - With CUDA Graph, GS1-0.8B reaches 12.51 ms P50 for one short question and **6.05×** speedup over default inference for eight short questions.
+- **Faithful — multi-step RL with calibrated rewards**
+  - Reinforcement learning optimizes sampled action probabilities with a Brier reward. [RLCD](docs/RLCD.md)
+  - Native probabilities and confidence support evidence gathering, deferral and explicit abstention choices.
+- **Frontier — Hybrid Architecture, Competitive Quality**
+  - **Causal Gated DeltaNet** and **Segmented Bidirectional Full Attention** give candidates their complete comparison context while preserving immutable prefixes for reuse across questions.
+  - Carry-preserving **Attention Residual** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor. [Architecture](docs/model.md)
+  - GS1-4B reaches **68.97** on the latest Decision Index 0.4.1 Public index. All GS1 sizes lie on the displayed parameter–performance frontier.
 
 ## Models and results
 
@@ -33,19 +39,10 @@ These are the **latest complete public-suite results** (edition 0.3). All four m
 
 ![GS1 parameter–performance Pareto frontier](assets/gs1_pareto_frontier.svg)
 
-Full-split measurements:
-
-| Benchmark | Decisions | GS1-0.8B | GS1-2B | GS1-4B |
-|---|---:|---:|---:|---:|
-| JevBench public | 231 | 77.92% | 80.09% | 86.15% |
-| AG News | 7,600 | 90.99% | 91.83% | 92.01% |
-| ToolACE selection | 640 | 93.28% | 93.91% | 94.22% |
-
-[All 37 benchmark scores, five areas, AA components, Brier, ECE and provenance →](benchmark/results.md)
 
 ## Quick start
 
-### Default Inference
+### Hugging Face Transformers
 
 Python 3.11+. Install the model folder's `requirements.txt`, or the corresponding PyTorch, Transformers 5.3.0, Accelerate, safetensors, Pydantic, TypeSafe SDK and Pillow dependencies. **The `gs1` repository is not required.** Choose a release folder or its published Hub ID.
 
@@ -54,34 +51,47 @@ python -m pip install torch==2.9.1 torchvision==0.24.1 transformers==5.3.0 accel
 ```
 
 ```python
+import torch
 from transformers import AutoModel
 
 model = (
     AutoModel.from_pretrained(
-        "/path/to/GS1-0.8B",  # or a published bigai/GS1-0.8B Hub ID
+        "bigai/GS1-0.8B",
         trust_remote_code=True,
     )
     .eval()
     .to("cuda")
 )
 
-result = model.decide(
-    state="A customer was charged twice and requests a refund.",
-    questions={
+request = {
+    "state": "A customer was charged twice and requests an urgent refund.",
+    "questions": {
         "team": {
             "type": "choice",
             "instructions": "Which team should handle this ticket?",
             "criteria": {"billing": "Payments and refunds", "technical": "Software problems"},
         },
         "refund": {"type": "noul", "instructions": "Does the customer request a refund?"},
+        "urgency": {
+            "type": "score",
+            "instructions": "Rate the urgency of handling this ticket.",
+            "criteria": ["Routine", "Soon", "Immediate"],
+        },
     },
-)
+}
+
+with torch.autocast("cuda", dtype=torch.bfloat16, cache_enabled=False):
+    result = model.decide(**request, precision="bf16")
+
 print(result["answers"])
+print(result["usage"])
 ```
 
 `result` contains `model`, `answers` and `usage`. Every supplied candidate receives a probability. [Full three-primitive example](examples/quickstart.py) · [Request JSON](examples/request.json)
 
-### Optimized GS1 runtime
+The released `chat_template.jinja` renders the native GS1 state, question and options through the same serializer used by the compiler. `model.decide` prepares typed candidates and branch metadata. [Native template usage](docs/inference.md#native-decision-template)
+
+### GS1 Runtime
 
 Linux/CUDA, Python 3.11+, PyTorch 2.9.1 and Transformers 5.3.0:
 
@@ -92,7 +102,7 @@ uv sync --locked --extra serve --extra cuda
 ```
 
 ```bash
-uv run gs1 serve --model /path/to/GS1-0.8B --model-name GS1
+uv run gs1 serve --model bigai/GS1-0.8B --model-name GS1
 ```
 
 The service exposes `POST /v1/systemone` and `GET /v1/models`. [Enable qualified CUDA Graph inference](docs/inference.md#cuda-graph-inference) or use `from gs1 import Engine` for in-process inference. The runtime and Hub model share the model equations and typed output definitions.
@@ -114,7 +124,7 @@ with TypeSafeClient(
     model="GS1",
 ) as client:
     result = client.system_one(
-        state="A customer was charged twice and requests a refund.",
+        state="A customer was charged twice and requests an urgent refund.",
         questions={
             "team": Choice(
                 instructions="Which team should handle this ticket?",
@@ -122,7 +132,7 @@ with TypeSafeClient(
             ),
             "refund": Noul(instructions="Does the customer request a refund?"),
             "urgency": Score(
-                instructions="Rate urgency.",
+                instructions="Rate the urgency of handling this ticket.",
                 criteria=["Routine", "Soon", "Immediate"],
             ),
         },
@@ -154,7 +164,7 @@ RTX 4090 reporting 48 GiB, BF16 computation, **256 tokens / one question**, five
 # From the source checkout; runs both 256/1,024-token and 1/8-question fixtures.
 uv sync --locked --extra serve --extra cuda --extra eval
 CUDA_VISIBLE_DEVICES=0 uv run python -m benchmark.latency \
-  --model /path/to/GS1-0.8B --out runs/latency/GS1-0.8B.json
+  --model bigai/GS1-0.8B --out runs/latency/GS1-0.8B.json
 ```
 
 [All shapes, P50/P95/P99, memory and methodology](benchmark/latency.md) · [Raw samples](benchmark/results/inference-latency.json) · [Earlier service/IPC and replica measurements](benchmark/results.md#latency-and-memory)
@@ -182,9 +192,11 @@ GS1 combines Qwen3.5 hybrid sequence mixing, **segmented bidirectional full atte
 
 ## Documentation and citation
 
-[Model](docs/model.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Evaluation](benchmark/README.md)
+[Model](docs/model.md) · [RLCD](docs/RLCD.md) · [Inference](docs/inference.md) · [API](docs/api.md) · [Evaluation](benchmark/README.md)
 
-Code: [Apache-2.0](LICENSE). Model-weight licenses are stated separately in each model card. This release contains model architecture, inference, serving, demonstrations and evaluation.
+Code and released model weights use [Apache-2.0](LICENSE).
+
+If you find our work helpful, feel free to give us a cite.
 
 ```bibtex
 @techreport{zheng2026gs1,

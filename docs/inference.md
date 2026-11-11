@@ -8,6 +8,28 @@ Each release folder contains the native model, tokenizer, processor assets and r
 
 The default path compiles one complete branch per question and executes each branch independently. Candidates for a question are scored together. It preserves the serialized head precision, uses FP32 final probability reductions and generates no text.
 
+## Native decision template
+
+`chat_template.jinja` renders a complete GS1 decision prompt for one question. It is generated from the serializer in [`compiler.py`](../gs1/model/compiler.py). Pass the raw state as one user message, the question's instructions as `question`, and normalized candidate descriptions as `options`:
+
+```python
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bigai/GS1-0.8B", trust_remote_code=True)
+prompt = tokenizer.apply_chat_template(
+    [{"role": "user", "content": "A customer was charged twice."}],
+    question="Which team should handle this ticket?",
+    options=["billing: Payments and refunds", "technical: Software problems"],
+    add_generation_prompt=True,
+    enable_thinking=False,
+    tokenize=False,
+)
+```
+
+Choice options use `candidate_id: description`; Noul options follow false/true order; Score options follow rubric order. Structured values use canonical JSON and text is XML-escaped. The template includes the trained user/assistant boundaries, empty thinking prefix and final `<|decide|>` token. The runtime also applies this native template when loading older GS1 tokenizer assets.
+
+Use `model.decide` or `Engine.evaluate` to execute decisions: these entries normalize typed candidates and construct the required token spans, masks, positions and budget checks. Regenerate existing runtime profiles after changing template or compiler code, since profiles bind both source and input-encoding files.
+
 ## Native Engine
 
 ```python
