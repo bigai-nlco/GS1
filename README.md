@@ -16,22 +16,24 @@ GS1 is a family of fast, uncertainty-aware, open-source decision models develope
 - **Full comparisons, reusable prefixes.** Causal Gated DeltaNet and segmented bidirectional full attention give candidates their complete comparison context while preserving immutable prefixes for reuse across questions. Carry-preserving **AttnRes** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor.
 - **Fast — native decisions, zero decoding.** One joint distribution directly yields **Choice** candidate probabilities, **Noul** true/false verification and **Score** expected ordinal values. With CUDA Graph, GS1-0.8B reaches **12.51 ms P50** for one short question and **6.05×** speedup over GS1 Default inference for eight short questions. [Measurements](benchmark/latency.md)
 - **Faithful — learn the probability used to act.** CRPO optimizes the sampled action's actual probability with a Brier reward. Native distributions and confidence expose uncertainty so applications can defer a decision, seek evidence or select an explicit abstention option. [Probability and confidence](docs/api.md#confidence)
-- **Frontier — compact models, competitive quality.** GS1-4B scores **68.95** in the report's public comparison snapshot, **8.25 points above Jev 1.14**. All four GS1 scales sit on the displayed parameter–performance frontier. [Results](#models-and-results)
+- **Frontier — compact models, competitive quality.** GS1-4B scores **68.97** in the latest public text evaluation, **8.27 points above Jev 1.14**. All four GS1 scales sit on the displayed parameter–performance frontier. [Results](#models-and-results)
 
 ## Models and results
 
-| Model | Decision Index 0.4.1 | Weights |
+| Model | Decision Index (Public index) | Weights |
 |---|---:|---|
-| **GS1-0.8B** | **56.15** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
+| **GS1-0.8B** | **56.12** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
 | **GS1-2B** | **62.22** | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
-| **GS1-4B** | **68.95** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
-| **GS1-9B** | **70.47** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
+| **GS1-4B** | **68.97** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
+| **GS1-9B** | **70.45** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
 
 Exact stored counts and source identities are in [the results](benchmark/results.md).
 
-[![GS1 parameter–performance Pareto frontier](assets/model-quality.svg)](assets/gs1_pareto_frontier.svg)
+These are the **latest complete public-suite results** (edition 0.3). All four models have **100% coverage** across **43 text benchmarks**, including **37 benchmarks** that contribute to the Public index. [Evaluation details](benchmark/results.md).
 
-New full-split measurements, 9 November 2026:
+![GS1 parameter–performance Pareto frontier](assets/gs1_pareto_frontier.svg)
+
+Full-split measurements:
 
 | Benchmark | Decisions | GS1-0.8B | GS1-2B | GS1-4B |
 |---|---:|---:|---:|---:|
@@ -136,7 +138,7 @@ print(result.scores["urgency"].score)
 
 ## Inference performance
 
-Fresh measurements of the current release:
+Latest inference measurements:
 
 | Model | GS1 Default P50 | GS1 eager P50 | CUDA Graph P50 / P95 | Speedup | Graph allocated |
 |---|---:|---:|---:|---:|---:|

@@ -16,22 +16,24 @@ GS1 是北京通用人工智能研究院开发的开源决策模型系列，具�
 - **完整比较，复用前缀。** 因果 Gated DeltaNet 与分段双向全注意力让候选项读取完整比较上下文，同时保持共享前缀不变，供不同问题复用。保留 carry 的 **AttnRes** 在稀疏全注意力接收层查询早期表示，并保留显式跳跃连接的锚点。
 - **Fast — 原生决策，零文本解码。** 一个联合分布直接给出 **Choice** 候选概率、**Noul** 真伪判断和 **Score** 有序等级期望。采用 CUDA Graph，GS1-0.8B 的单个短问题调用 **P50 为 12.51 ms**；八个短问题相对 GS1 默认推理加速 **6.05×**。[实测数据](benchmark/latency.md)
 - **Faithful — 学习真正用于行动的概率。** CRPO 用采样动作的真实概率计算 Brier 奖励；原生分布与置信度向应用暴露不确定性，支持延后判断、补充证据或选择显式拒答选项。[概率与置信度](docs/api.zh-CN.md#置信度)
-- **Frontier — 紧凑规模，出色决策质量。** 报告的公开对比快照中，GS1-4B 得分 **68.95**，比 Jev 1.14 高 **8.25 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型与成绩](#模型与成绩)
+- **Frontier — 紧凑规模，出色决策质量。** 最新公开文本评测中，GS1-4B 得分 **68.97**，比 Jev 1.14 高 **8.27 分**；四个 GS1 尺寸均位于图示模型的参数量—性能前沿。[模型与成绩](#模型与成绩)
 
 ## 模型与成绩
 
-| 模型 | Decision Index 0.4.1 | 权重 |
+| 模型 | Decision Index（Public index） | 权重 |
 |---|---:|---|
-| **GS1-0.8B** | **56.15** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
+| **GS1-0.8B** | **56.12** | [Hugging Face](https://huggingface.co/bigai/GS1-0.8B) |
 | **GS1-2B** | **62.22** | [Hugging Face](https://huggingface.co/bigai/GS1-2B) |
-| **GS1-4B** | **68.95** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
-| **GS1-9B** | **70.47** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
+| **GS1-4B** | **68.97** | [Hugging Face](https://huggingface.co/bigai/GS1-4B) |
+| **GS1-9B** | **70.45** | [Hugging Face](https://huggingface.co/bigai/GS1-9B) |
 
 实际存储参数量与来源信息见[完整结果](benchmark/results.md)。
 
-[![GS1 参数量—性能 Pareto 前沿](assets/model-quality.svg)](assets/gs1_pareto_frontier.svg)
+以上为**最新完整公开套件评测结果**（edition 0.3）。四个模型均覆盖全部 **43 项文本基准**，覆盖率 **100%**，其中 **37 项基准**计入 Public index。[评测详情](benchmark/results.md)。
 
-2026 年 11 月 9 日新增的完整测试集测量：
+![GS1 参数量—性能 Pareto 前沿](assets/gs1_pareto_frontier.svg)
+
+完整测试集测量：
 
 | Benchmark | Decisions | GS1-0.8B | GS1-2B | GS1-4B |
 |---|---:|---:|---:|---:|
@@ -136,7 +138,7 @@ print(result.scores["urgency"].score)
 
 ## 推理性能
 
-对当前发布代码的新增测量：
+最新推理性能实测结果：
 
 | 模型 | GS1 默认 P50 | GS1 eager P50 | CUDA Graph P50 / P95 | 加速比 | Graph 已分配显存 |
 |---|---:|---:|---:|---:|---:|

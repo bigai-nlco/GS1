@@ -72,6 +72,18 @@ Raw and skill are displayed on a 0–100 scale. Raw uses the named native metric
 
 [CSV](results/decision-index.csv) · [JSON with tracks and chance levels](results/public-evaluation.json) · [Official-script reproduction](di/README.md)
 
+## GS1-9B public evaluation (10 November 2026)
+
+GS1-9B completed all **37 benchmarks** in the frozen public edition 0.3 panel:
+
+| Model | Public index | Raw index | Requests | Decisions | Coverage | Failed requests |
+|---|---:|---:|---:|---:|---:|---:|
+| GS1-9B | **70.45** | **77.46** | 110,087 | 272,229 | 100% | 0 |
+
+Four GPU replicas ran native BF16 reference computation, one branch at a time, with original FP32 text/head and BF16 vision storage. Context admission increased from 16,384 to **32,768 tokens**; the longest frozen branch contains **22,650 tokens**. All original input text and candidates were processed in full.
+
+The official Decision Index scorer at `9eb2dbe2a358004c8782c66e40a83ac07b953fec` and the local scorer agree on both indices. Weight and runtime hashes were checked after the complete run. [All benchmark scores, coverage, configuration and source identities](results/gs1-9b-public-evaluation.json).
+
 ## Regular benchmark measurements
 
 Fresh reference-engine runs on 9 November 2026 used the same three checkpoint weight identities, BF16 computation, zero retries and all selected records. Each model completed **8,471 requests with zero failures**: 231 JevBench public tasks, the 7,600-record AG News test split and 640 accepted ToolACE conversations selected by the fixed hash rule.
@@ -136,6 +148,6 @@ uv sync --locked --extra eval
 uv run python -m benchmark.report
 ```
 
-This redraws the five quantitative SVG/PNG figures from aggregate JSON under `benchmark/results`; it does not run models or modify benchmark data. The 9B report value remains separate until its checkpoint can be validated.
+This redraws the five quantitative SVG/PNG figures from aggregate JSON under `benchmark/results`; it does not run models or modify benchmark data. The 10 November GS1-9B measurement is recorded in [its public evaluation result](results/gs1-9b-public-evaluation.json).
 
 The homepage Pareto figure is preserved as [SVG](../assets/gs1_pareto_frontier.svg); its 6 November report snapshot scores remain distinct from the 7 November local evaluation. `benchmark.report` writes the local size comparison to `assets/model-size-results.svg` and leaves `model-quality.svg` intact.
