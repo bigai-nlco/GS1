@@ -1,7 +1,7 @@
 import asyncio
 import json
 import threading
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,7 +22,42 @@ def test_model_server_handles_all_primitives(checkpoint, decision_request):
         assert response.status_code == 200, response.text
         assert set(response.json()["answers"]) == set(decision_request["questions"])
         assert response.json()["usage"]["output_tokens"] == 0
+        assert "X-GS1-Graph-Hits" in response.headers
+        assert "_gs1_stats" not in response.json()
         assert client.post("/v1/systemone", json={"model": "unknown", **decision_request}).status_code == 422
+
+
+def test_admission_never_runs_inference(checkpoint, decision_request):
+    app = create_app(Settings(artifact=checkpoint, device="cpu", precision="fp32"))
+    with TestClient(app) as client:
+        engine = app.state.backend.engines[0]
+        with patch.object(engine, "evaluate") as evaluate:
+            response = client.post("/v1/admission", json={"model": "GS1", **decision_request})
+            evaluate.assert_not_called()
+        details = response.json()
+        assert response.status_code == 200
+        assert details["accepted"]
+        assert len(details["branches"]) == 3
+        assert len(details["request_sha256"]) == 64
+        assert "state" not in details
+        runtime = client.get("/v1/runtime").json()
+        assert runtime["available"]
+        assert runtime["last_admission"]["request_sha256"] == details["request_sha256"]
+
+
+def test_capacity_rejection_keeps_backend_healthy(checkpoint, decision_request):
+    settings = Settings(artifact=checkpoint, device="cpu", precision="fp32", max_attention_bytes=1)
+    app = create_app(settings)
+    with TestClient(app) as client:
+        with patch.object(app.state.backend.engines[0], "evaluate") as evaluate:
+            response = client.post("/v1/systemone", json={"model": "GS1", **decision_request})
+            evaluate.assert_not_called()
+        assert response.status_code == 422
+        details = response.json()["error"]["details"]
+        assert details["attention_budget_bytes"] == 1
+        assert not details["accepted"]
+        assert all(branch["violations"] for branch in details["branches"])
+        assert client.get("/v1/runtime").json()["available"]
 
 
 def test_server_rejects_invalid_primitive(checkpoint, decision_request):
@@ -30,6 +65,21 @@ def test_server_rejects_invalid_primitive(checkpoint, decision_request):
     decision_request["questions"]["score"]["criteria"] = ["single"]
     with TestClient(create_app(settings)) as client:
         assert client.post("/v1/systemone", json={"model": "GS1", **decision_request}).status_code == 422
+
+
+def test_server_preserves_admission_error_details(checkpoint, decision_request):
+    app = create_app(Settings(artifact=checkpoint, device="cpu", precision="fp32"))
+    details = {"stage": "admission", "branch_tokens": 9000, "token_budget": 8192}
+    with TestClient(app) as client:
+        with patch.object(
+            app.state.backend,
+            "evaluate",
+            AsyncMock(side_effect=BackendError("branch_tokens=9000 > token_budget=8192", 422, details)),
+        ):
+            response = client.post("/v1/systemone", json={"model": "GS1", **decision_request})
+    assert response.status_code == 422
+    assert response.json()["error"]["details"] == details
+    assert "9000" in response.json()["error"]["message"]
 
 
 def test_official_typesafe_sdk_uses_local_api(checkpoint, decision_request):

@@ -101,7 +101,10 @@ class RuntimeProfile:
         if self.data["arithmetic"] == "native_rows":
             from gs1.inference.arithmetic import NativeRowGeometry
 
-            return NativeRowGeometry()
+            cache_mb = self.data.get("deployment", {}).get("compute_weight_cache_mb", 0)
+            if type(cache_mb) is not int or cache_mb < 0:
+                raise ValueError("Invalid qualified compute weight cache limit")
+            return NativeRowGeometry(cache_bytes=cache_mb * 1024**2)
         return None
 
 

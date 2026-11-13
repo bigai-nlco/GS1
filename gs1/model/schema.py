@@ -52,12 +52,12 @@ class DecisionRequest(StrictModel):
             if not isinstance(question.instructions, (str, dict, list)):
                 raise ValueError("Every question requires text, object, or array instructions")
             if question.type == "choice":
-                if not 1 <= len(question.criteria) <= 255:
-                    raise ValueError("Choice requires between 1 and 255 candidates")
+                if not 1 <= len(question.criteria) <= 256:
+                    raise ValueError("Choice requires between 1 and 256 candidates")
                 descriptions = [v for v in question.criteria.values() if v is not None]
             elif question.type == "score":
-                if not 2 <= len(question.criteria) <= 10:
-                    raise ValueError("Score requires between 2 and 10 levels")
+                if not 2 <= len(question.criteria) <= 256:
+                    raise ValueError("Score requires between 2 and 256 levels")
                 descriptions = question.criteria
             else:
                 descriptions = list(noul_descriptions(question))

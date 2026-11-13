@@ -119,7 +119,7 @@ python -m pip install typesafe-sdk==0.7.0
 from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
 
 with TypeSafeClient(
-    base_url="http://127.0.0.1:8000",
+    base_url="http://127.0.0.1:9000",
     api_key="local",
     model="GS1",
 ) as client:
@@ -182,7 +182,7 @@ npm run build
 npm start
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 8000. Use **Query** to edit state and questions, compare probabilities and inspect raw JSON. GS1 is the default backend. For hosted Jev, export `TYPESAFE_API_KEY` on the Node server to call the official TypeSafe API. [Setup and controls](playground/README.md)
+Open [localhost:3000](http://127.0.0.1:3000) with GS1 serving on port 9000. Use **Query** to edit state and questions, compare probabilities and inspect raw JSON. GS1 is the default backend. For hosted Jev, export `TYPESAFE_API_KEY` on the Node server to call the official TypeSafe API. [Setup and controls](playground/README.md)
 
 ## How GS1 decides
 

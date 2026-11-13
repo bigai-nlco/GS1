@@ -21,7 +21,7 @@ def test_score_uses_zero_based_expectation():
     assert answer.confidence == pytest.approx(0.25)
 
 
-@pytest.mark.parametrize("criteria", [[], ["single"], list(range(11))])
+@pytest.mark.parametrize("criteria", [[], ["single"], ["level"] * 257])
 def test_score_limits(criteria):
     with pytest.raises(ValidationError):
         DecisionRequest.model_validate(
@@ -31,3 +31,54 @@ def test_score_limits(criteria):
                 "questions": {"q": {"type": "score", "instructions": "Rate.", "criteria": criteria}},
             }
         )
+
+
+@pytest.mark.parametrize(
+    "kind,count",
+    [
+        ("choice", 1),
+        ("choice", 255),
+        ("choice", 256),
+        ("score", 2),
+        ("score", 11),
+        ("score", 255),
+        ("score", 256),
+    ],
+)
+def test_candidate_counts_within_limits(kind, count):
+    criteria = {str(i): str(i) for i in range(count)} if kind == "choice" else [str(i) for i in range(count)]
+    request = DecisionRequest.model_validate(
+        {
+            "model": "GS1",
+            "state": "test",
+            "questions": {"q": {"type": kind, "instructions": "Choose a level.", "criteria": criteria}},
+        }
+    )
+    assert len(request.questions["q"].criteria) == count
+
+
+@pytest.mark.parametrize("count", [0, 257])
+def test_choice_limits(count):
+    with pytest.raises(ValidationError):
+        DecisionRequest.model_validate(
+            {
+                "model": "GS1",
+                "state": "test",
+                "questions": {
+                    "q": {
+                        "type": "choice",
+                        "instructions": "Choose.",
+                        "criteria": {str(i): str(i) for i in range(count)},
+                    }
+                },
+            }
+        )
+
+
+def test_score_at_maximum_level():
+    question = Score(instructions="Rate.", criteria=[str(i) for i in range(256)])
+    answer = make_answer(question, [0.0] * 255 + [1.0])
+    assert answer.score == 255
+    assert len(answer.probabilities) == len(answer.legend) == 256
+    assert answer.probabilities["255"] == 1
+    assert answer.legend["255"] == "255"

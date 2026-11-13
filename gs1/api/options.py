@@ -12,6 +12,8 @@ FIELDS = (
     "max_request_tokens",
     "max_branches",
     "max_attention_bytes",
+    "gpu_memory_reserve_mb",
+    "compute_weight_cache_mb",
     "max_logit_elements",
     "batch_tokens",
     "max_queue",

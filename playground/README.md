@@ -19,7 +19,7 @@ npm run build
 npm start
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000). `backends.yaml` points `gs1_local` at port 8000 and model alias `GS1`. Change its endpoint/model to match a deployed service. The service must expose `GET /v1/models` and `POST /v1/systemone`. The actual model identity comes from the configured endpoint, not a hard-coded size label.
+Open [localhost:3000](http://127.0.0.1:3000). `backends.yaml` points `gs1_local` at port 9000 and model alias `GS1`. Change its endpoint/model to match a deployed service. The service must expose `GET /v1/models` and `POST /v1/systemone`. The actual model identity comes from the configured endpoint, not a hard-coded size label.
 
 ## Optional Jev via TypeSafe
 

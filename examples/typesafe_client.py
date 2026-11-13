@@ -7,7 +7,7 @@ from typesafe_sdk import Choice, Noul, RetryPolicy, Score, TypeSafeClient
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     parser.add_argument("--model", default="GS1")
     args = parser.parse_args()
     with TypeSafeClient(

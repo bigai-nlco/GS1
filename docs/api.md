@@ -2,7 +2,31 @@
 
 [English](api.md) · [简体中文](api.zh-CN.md)
 
-The Python service exposes `POST /v1/systemone`, `GET /v1/models` and FastAPI's `/docs`. The request/response contract supports the Choice, Noul and Score subset of the TypeSafe protocol. `model.decide` returns the same answer definitions as a Python dictionary; `Engine.evaluate` returns a Pydantic `DecisionResponse`.
+The Python service exposes `POST /v1/systemone`, `POST /v1/admission`, `GET /v1/runtime`, `GET /v1/models` and FastAPI's `/docs`. The request/response contract supports the Choice, Noul and Score subset of the TypeSafe protocol. `model.decide` returns the same answer definitions as a Python dictionary; `Engine.evaluate` returns a Pydantic `DecisionResponse`.
+
+## Single-GPU serving defaults
+
+```bash
+# Replace 0 with the GPU you select; each server process uses one GPU.
+CUDA_VISIBLE_DEVICES=0 uv run gs1 serve \
+  --model /data/shared/GS1/GS1-9B --model-name GS1-9B
+```
+
+The default listener is `0.0.0.0:9000`. LAN clients use `http://<server-ip>:9000` as the SDK base URL. No GPU index or multi-GPU topology is saved in the serving defaults; choose devices explicitly. For optional multi-GPU serving, select replicas explicitly with `scripts/serve_replicas.py --gpus ...`.
+
+| Setting | Default |
+|---|---|
+| Engine / precision | `reference` / `bf16` |
+| Context / batch tokens | 16384 / 16384, capped by model limits |
+| Questions / logical request tokens / branches | 512 / 131072 / 5120, capped by model limits |
+| GPU memory reserve | 1024 MiB |
+| Prefix cache / optional BF16 weight cache | 0 MiB / 0 MiB |
+| Queue / deadline / CPU threads | 32 / 120 seconds / 2 |
+| Graph slots / cache / entries / capture policy | 1 / 2048 MiB / 16 / `prewarm` |
+
+Before each inference, the server releases unused allocator blocks and sets its attention and temporary tensor budget to **actual driver-free VRAM minus the reserve**, capped by `--max-attention-bytes` and the model limit. Resident weights and graph pools are already excluded from free VRAM. The default configured ceiling is 512 GiB; it does not allocate or promise that much memory. For explicitly selected concurrent graph slots, the remaining transient budget is divided across slots. CPU serving uses the configured/model ceiling. The bounded compute cache stays bounded after model buffer changes; original checkpoint weights retain their precision.
+
+CUDA graphs require a local qualification and warmup file: add `--runtime-profile ... --experimental-cuda-graphs --graph-warmup-requests ...`. Profiles bind the source and runtime, so regenerate them after updating. A nonzero `--compute-weight-cache-mb` must match the profile's `deployment.compute_weight_cache_mb` used during qualification.
 
 ## Request
 
@@ -18,10 +42,10 @@ The Python service exposes `POST /v1/systemone`, `GET /v1/models` and FastAPI's 
 }
 ```
 
-State and instructions accept strings, objects or arrays. Choice descriptions accept strings, objects, arrays or null; criteria contain 1–255 distinct candidate IDs. Noul optionally supplies descriptions of true/false. Score criteria are an ordered array of 2–10 levels. A request needs a nonempty question map. Question IDs and candidate IDs are preserved. Unsupported primitive types and invalid values are rejected.
+State and instructions accept strings, objects or arrays. Choice descriptions accept strings, objects, arrays or null; criteria contain 1–256 distinct candidate IDs. Noul optionally supplies descriptions of true/false. Score criteria are an ordered array of 2–256 levels. A request needs a nonempty question map. Question IDs and candidate IDs are preserved. Unsupported primitive types and invalid values are rejected.
 
 ```bash
-curl http://127.0.0.1:8000/v1/systemone \
+curl http://127.0.0.1:9000/v1/systemone \
   -H 'Content-Type: application/json' \
   --data-binary @examples/request-with-model.json
 ```
@@ -39,7 +63,7 @@ python -m pip install typesafe-sdk==0.7.0
 ```python
 from typesafe_sdk import Choice, TypeSafeClient
 
-with TypeSafeClient(base_url="http://127.0.0.1:8000", api_key="local", model="GS1") as client:
+with TypeSafeClient(base_url="http://127.0.0.1:9000", api_key="local", model="GS1") as client:
     result = client.system_one(
         state="A customer was charged twice and requests a refund.",
         questions={
@@ -77,6 +101,8 @@ Score `[0.25, 0.5, 0.25]` gives score 1 and confidence 0.25. These public confid
 
 ## Errors and client behavior
 
-Malformed or over-budget inputs fail explicitly. Queue saturation returns 529 with `Retry-After`; request deadlines return 504. Caller cancellation prevents later response delivery while GPU ownership is drained safely. Evaluation uses zero retries and records failures; application retry policy belongs to the client.
+Malformed or over-budget inputs fail explicitly. `POST /v1/admission` compiles and estimates a request without running inference. Capacity rejection returns 422 with actual branch tokens, estimated bytes, current limits and a request hash in `error.details`; prompts are not included in admission diagnostics. `GET /v1/runtime` reports readiness, current budgets, qualified geometry count and resident graph statistics. Successful inference includes `X-GS1-Graph-Hits`, `X-GS1-Graph-Misses` and `X-GS1-Profile-Fallback` headers.
+
+Queue saturation returns 529 with `Retry-After`; request deadlines return 504. Caller cancellation prevents later response delivery while GPU ownership is drained safely. Evaluation uses zero retries and records failures; application retry policy belongs to the client.
 
 The Python service runs local GS1 inference. The Node playground can also call Jev through the official TypeSafe API using `TYPESAFE_API_KEY`; credentials stay on the Node server, and the raw provider payload remains separate from its validated response. [Playground setup](../playground/README.md#optional-jev-via-typesafe).

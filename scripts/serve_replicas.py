@@ -272,6 +272,7 @@ async def supervise(args, gpus):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     add_serving_arguments(parser)
+    parser.set_defaults(host="127.0.0.1")
     parser.add_argument("--runs-dir", type=Path, default=Path("runs/replicas"))
     parser.add_argument("--gpus")
     parser.add_argument("--base-port", type=int, default=18080)

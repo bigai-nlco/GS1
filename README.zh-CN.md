@@ -119,7 +119,7 @@ python -m pip install typesafe-sdk==0.7.0
 from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
 
 with TypeSafeClient(
-    base_url="http://127.0.0.1:8000",
+    base_url="http://127.0.0.1:9000",
     api_key="local",
     model="GS1",
 ) as client:
@@ -182,7 +182,7 @@ npm run build
 npm start
 ```
 
-在端口 8000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。通过 **Query** 编辑状态与问题、比较概率并查看原始 JSON。默认后端为 GS1；在 Node 服务端导出 `TYPESAFE_API_KEY` 后，可直接通过 TypeSafe 官方 API 使用 Jev。[设置与操作](playground/README.zh-CN.md)
+在端口 9000 启动 GS1 后，打开 [localhost:3000](http://127.0.0.1:3000)。通过 **Query** 编辑状态与问题、比较概率并查看原始 JSON。默认后端为 GS1；在 Node 服务端导出 `TYPESAFE_API_KEY` 后，可直接通过 TypeSafe 官方 API 使用 Jev。[设置与操作](playground/README.zh-CN.md)
 
 ## GS1 如何做决策
 

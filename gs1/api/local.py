@@ -9,9 +9,10 @@ from dataclasses import dataclass
 
 
 class BackendError(Exception):
-    def __init__(self, message, status=529):
+    def __init__(self, message, status=529, details=None):
         super().__init__(message)
         self.status = status
+        self.details = details
 
 
 @dataclass
@@ -66,6 +67,11 @@ class LocalBackend:
         ):
             raise ValueError("The GS1 runtime profile does not qualify CUDA graphs")
         self.policy = self.loaded.execution_policy
+        if self.policy is not None and self.policy.cache_bytes != s.compute_weight_cache_mb * 1024**2:
+            raise ValueError("Requalify the runtime profile for this compute weight cache limit")
+
+    def _configure_slot(self, index, engine):
+        """Initialize resource limits before any optional graph warmup."""
 
     def _make_slot(self, index):
         import json
@@ -111,6 +117,7 @@ class LocalBackend:
         )
         stream = torch.cuda.Stream(device=s.device) if torch.device(s.device).type == "cuda" else None
         try:
+            self._configure_slot(index, engine)
             if graph is not None and s.graph_capture_policy == "prewarm":
                 if s.graph_warmup_requests is None:
                     raise ValueError("Graph prewarm requires --graph-warmup-requests")
@@ -201,6 +208,9 @@ class LocalBackend:
                 )
                 if stream is not None:
                     stream.synchronize()
+                # Carry this request's statistics across the executor boundary.
+                # Reading last_stats in middleware races the next queued request.
+                result._gs1_stats = dict(engine.last_stats)
         except ValueError as error:
             failure = (str(error)[:1024], 422)
         except TimeoutError as error:

@@ -17,8 +17,8 @@ class WorkloadCase(ModelConfig):
     questions: int = Field(ge=1)
     state_repeats: int = Field(default=16, ge=0)
     description_repeats: int = Field(default=1, ge=1)
-    choice_candidates: int = Field(default=3, ge=1, le=255)
-    score_levels: int = Field(default=3, ge=2, le=10)
+    choice_candidates: int = Field(default=3, ge=1, le=256)
+    score_levels: int = Field(default=3, ge=2, le=256)
 
 
 class Workload(ModelConfig):

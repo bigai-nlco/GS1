@@ -155,7 +155,10 @@ class NativeRowGeometry:
 
     name = "gs1.native-row-geometry.v1"
 
-    def __init__(self):
+    def __init__(self, cache_bytes=0):
+        if cache_bytes < 0:
+            raise ValueError("Compute cache limit must be nonnegative")
+        self.cache_bytes = cache_bytes
         self.weights = {}
         self.fingerprint = None
 
@@ -166,19 +169,22 @@ class NativeRowGeometry:
         if fingerprint != self.fingerprint:
             # Replica-owned compute copies live outside every private graph
             # pool. Slots share these immutable tensors without model hooks.
+            self.weights.clear()
+            remaining = self.cache_bytes
             with torch.no_grad():
-                self.weights = (
-                    {
-                        id(module): (
-                            module.weight.to(torch.bfloat16),
-                            module.bias.to(torch.bfloat16) if module.bias is not None else None,
-                        )
-                        for module in model.language_model.modules()
-                        if isinstance(module, torch.nn.Linear)
-                    }
-                    if precision == "bf16"
-                    else {}
-                )
+                for module in model.language_model.modules():
+                    if precision != "bf16" or not isinstance(module, torch.nn.Linear):
+                        continue
+                    size = 2 * (
+                        module.weight.numel() + (module.bias.numel() if module.bias is not None else 0)
+                    )
+                    if size > remaining:
+                        continue
+                    self.weights[id(module)] = (
+                        module.weight.to(torch.bfloat16),
+                        module.bias.to(torch.bfloat16) if module.bias is not None else None,
+                    )
+                    remaining -= size
             self.fingerprint = fingerprint
 
     def weight(self, module):

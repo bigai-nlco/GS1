@@ -11,25 +11,28 @@ class Settings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     local_model: str = Field(default="GS1", min_length=1)
-    host: str = "127.0.0.1"
-    port: int = Field(default=8000, ge=1, le=65535)
+    host: str = "0.0.0.0"
+    port: int = Field(default=9000, ge=1, le=65535)
     artifact: str | Path = "MODEL_PATH"
     device: str = "cuda"
     precision: Literal["fp32", "bf16"] = "bf16"
     engine: Literal["reference", "shared"] = "reference"
-    max_context: int = Field(default=4096, ge=64)
+    max_context: int = Field(default=16384, ge=64)
     max_questions: int = Field(default=512, ge=1)
     max_request_tokens: int = Field(default=131072, ge=64)
     max_branches: int = Field(default=5120, ge=1)
-    max_attention_bytes: int = Field(default=1073741824, ge=1)
+    # A ceiling, not a reservation. CUDA admission uses actual free VRAM below it.
+    max_attention_bytes: int = Field(default=549755813888, ge=1)
+    gpu_memory_reserve_mb: int = Field(default=1024, ge=0)
+    compute_weight_cache_mb: int = Field(default=0, ge=0)
     max_logit_elements: int = Field(default=16777216, ge=1)
-    batch_tokens: int = Field(default=8192, ge=64)
+    batch_tokens: int = Field(default=16384, ge=64)
     max_queue: int = Field(default=32, ge=1)
-    deadline_seconds: float = Field(default=30, gt=0)
-    cache_mb: int = Field(default=512, ge=0)
+    deadline_seconds: float = Field(default=120, gt=0)
+    cache_mb: int = Field(default=0, ge=0)
     cuda_graphs: bool = False
-    graph_cache_mb: int = Field(default=1024, ge=1)
-    graph_cache_entries: int = Field(default=4, ge=1)
+    graph_cache_mb: int = Field(default=2048, ge=1)
+    graph_cache_entries: int = Field(default=16, ge=1)
     graph_capture_policy: Literal["prewarm", "online"] = "prewarm"
     graph_warmup_requests: Path | None = None
     graph_slots: Literal[1, 2, 4] = 1
