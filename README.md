@@ -28,20 +28,19 @@ GS1 is a family of fast, uncertainty-aware, open-source decision models develope
 
 <table align="center">
   <tr>
-    <td width="50%" align="center"><img src="assets/demos/google-flights.gif" alt="Google Flights"><br><sub>Plans a multi-stop trip by comparing destinations, dates, and flight options in Google Flights.</sub></td>
-    <td width="50%" align="center"><img src="assets/demos/street-fighter-iii.gif" alt="Street Fighter III"><br><sub>Reads the live match and picks timely moves in Street Fighter III.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/starcraft-ii-step82.gif" alt="StarCraft II"><br><sub>StarCraft II: Directs a Protoss force through a large-scale air engagement against Zerg.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/warcraft-iii-sft5.gif" alt="Warcraft III"><br><sub>Warcraft III: Leads a coordinated push into the enemy base in a long-horizon match.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/street-fighter-iii.gif" alt="Street Fighter III"><br><sub>Street Fighter III: Reads the fight and times attacks around the opponent.</sub></td>
   </tr>
   <tr>
-    <td width="50%" align="center"><img src="assets/demos/b2b-sourcing.gif" alt="B2B sourcing"><br><sub>Finds products and works through a supplier sourcing flow in a procurement portal.</sub></td>
-    <td width="50%" align="center"><img src="assets/demos/gta-chinatown-wars.gif" alt="GTA Chinatown Wars"><br><sub>Uses both DS screens to navigate the city and act on changing game state.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/gta-chinatown-wars.gif" alt="GTA Chinatown Wars"><br><sub>GTA: Chinatown Wars: Uses both DS screens to navigate and react to changing game state.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/gta-vice-city.gif" alt="GTA Vice City"><br><sub>GTA: Vice City: Navigates an open-world encounter and responds to threats in real time.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/warcraft-iii.gif" alt="Warcraft III"><br><sub>Warcraft III: Coordinates unit actions and timing during a raid.</sub></td>
   </tr>
   <tr>
-    <td width="50%" align="center"><img src="assets/demos/gta-vice-city.gif" alt="GTA Vice City"><br><sub>Steers through an open-world driving challenge while reacting to traffic and turns.</sub></td>
-    <td width="50%" align="center"><img src="assets/demos/warcraft-iii.gif" alt="Warcraft III"><br><sub>Coordinates unit actions and timing to break through a Warcraft III raid.</sub></td>
-  </tr>
-  <tr>
-    <td width="50%" align="center"><img src="assets/demos/age-of-mythology.gif" alt="Age of Mythology"><br><sub>Tracks a live battle and adjusts its strategy as the fight unfolds.</sub></td>
-    <td width="50%" align="center"><img src="assets/demos/online-booking.gif" alt="Online booking"><br><sub>Compares lodging options, selects a stay, and completes the booking flow.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/google-flights.gif" alt="Google Flights"><br><sub>Google Flights: Compares routes and dates to plan a multi-stop trip.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/b2b-sourcing.gif" alt="B2B sourcing"><br><sub>B2B sourcing: Finds products and evaluates suppliers in a procurement workflow.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/online-booking.gif" alt="Online booking"><br><sub>Airbnb: Compares lodging options and completes the booking flow.</sub></td>
   </tr>
 </table>
 
