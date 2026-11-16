@@ -24,6 +24,27 @@ GS1 is a family of fast, uncertainty-aware, open-source decision models develope
   - Carry-preserving **Attention Residual** lets sparse full-attention receivers query earlier representations while retaining the explicit skip-connection anchor. [Architecture](docs/model.md)
   - GS1-4B reaches **68.97** on the latest Decision Index 0.4.1 Public index. All GS1 sizes lie on the displayed parameter–performance frontier.
 
+## Demos
+
+<table align="center">
+  <tr>
+    <td width="50%" align="center"><img src="assets/demos/google-flights.gif" alt="Google Flights"><br><sub>Plans a multi-stop trip by comparing destinations, dates, and flight options in Google Flights.</sub></td>
+    <td width="50%" align="center"><img src="assets/demos/street-fighter-iii.gif" alt="Street Fighter III"><br><sub>Reads the live match and picks timely moves in Street Fighter III.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="assets/demos/b2b-sourcing.gif" alt="B2B sourcing"><br><sub>Finds products and works through a supplier sourcing flow in a procurement portal.</sub></td>
+    <td width="50%" align="center"><img src="assets/demos/gta-chinatown-wars.gif" alt="GTA Chinatown Wars"><br><sub>Uses both DS screens to navigate the city and act on changing game state.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="assets/demos/gta-vice-city.gif" alt="GTA Vice City"><br><sub>Steers through an open-world driving challenge while reacting to traffic and turns.</sub></td>
+    <td width="50%" align="center"><img src="assets/demos/warcraft-iii.gif" alt="Warcraft III"><br><sub>Coordinates unit actions and timing to break through a Warcraft III raid.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="assets/demos/age-of-mythology.gif" alt="Age of Mythology"><br><sub>Tracks a live battle and adjusts its strategy as the fight unfolds.</sub></td>
+    <td width="50%" align="center"><img src="assets/demos/online-booking.gif" alt="Online booking"><br><sub>Compares lodging options, selects a stay, and completes the booking flow.</sub></td>
+  </tr>
+</table>
+
 ## Models and results
 
 | Model | Decision Index (Public index) | Weights |
