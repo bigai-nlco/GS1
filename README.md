@@ -35,7 +35,7 @@ GS1 is a family of fast, uncertainty-aware, open-source decision models develope
   <tr>
     <td width="33%" align="center"><img src="assets/demos/gta-chinatown-wars.gif" alt="GTA Chinatown Wars"><br><sub>GTA: Chinatown Wars: Uses both DS screens to navigate and react to changing game state.</sub></td>
     <td width="33%" align="center"><img src="assets/demos/gta-vice-city.gif" alt="GTA Vice City"><br><sub>GTA: Vice City: Navigates an open-world encounter and responds to threats in real time.</sub></td>
-    <td width="33%" align="center"><img src="assets/demos/warcraft-iii.gif" alt="Warcraft III"><br><sub>Warcraft III: Coordinates unit actions and timing during a raid.</sub></td>
+    <td width="33%" align="center"><img src="assets/demos/minecraft.gif" alt="Minecraft"><br><sub>Minecraft: Gathers wood and crafts a workbench as steps toward making a wooden pickaxe.</sub></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="assets/demos/google-flights.gif" alt="Google Flights"><br><sub>Google Flights: Compares routes and dates to plan a multi-stop trip.</sub></td>
