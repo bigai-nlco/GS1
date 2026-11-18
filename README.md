@@ -226,3 +226,12 @@ If you find our work helpful, feel free to give us a cite.
   year={2026}
 }
 ```
+
+## Groups
+
+You can contact us and communicate with us by adding our group:
+
+
+| WeChat Group |
+|:-------------------------: |
+| <img src="assets/logos/wechat_QR.jpeg" width="200" height="200"> |
