@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-![GS1 — Fast, Faithful, Frontier](assets/banner.svg)
+![GS1 — Fast, Faithful, Frontier](assets/banner.png)
 
 > ***Fast, Faithful, Frontier System One Intelligence.***
 
