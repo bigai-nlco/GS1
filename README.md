@@ -57,7 +57,7 @@ Exact stored counts and source identities are in [the results](benchmark/results
 
 These are the **latest complete public-suite results** (edition 0.3). All four models have **100% coverage** across **43 text benchmarks**, including **37 benchmarks** that contribute to the Public index. [Evaluation details](benchmark/results.md).
 
-![GS1 parameter–performance Pareto frontier](assets/gs1_pareto_frontier_updated.svg)
+![GS1 parameter–performance Pareto frontier](assets/gs1_pareto_frontier_updated.png)
 
 
 ## Quick start
