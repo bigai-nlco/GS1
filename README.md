@@ -28,14 +28,14 @@ GS1 is a family of fast, uncertainty-aware, open-source decision models develope
 
 <table align="center">
   <tr>
-    <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/starcraft-ii-step82.gif" alt="StarCraft II"><br><sub>StarCraft II: Directs a Protoss force through a large-scale air engagement against Zerg.</sub></td>
+    <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@b1cd0ed542d9e36e059966533f5b3e68d20da5d8/assets/demos/starcraft-ii-step82.gif" alt="StarCraft II"><br><sub>StarCraft II: Directs a Protoss force through a large-scale air engagement against Zerg.</sub></td>
     <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/warcraft-iii-sft5.gif" alt="Warcraft III"><br><sub>Warcraft III: Leads a coordinated push into the enemy base in a long-horizon match.</sub></td>
     <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/street-fighter-iii.gif" alt="Street Fighter III"><br><sub>Street Fighter III: Reads the fight and times attacks around the opponent.</sub></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/gta-chinatown-wars.gif" alt="GTA Chinatown Wars"><br><sub>GTA: Chinatown Wars: Uses both DS screens to navigate and react to changing game state.</sub></td>
     <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/gta-vice-city.gif" alt="GTA Vice City"><br><sub>GTA: Vice City: Navigates an open-world encounter and responds to threats in real time.</sub></td>
-    <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/minecraft.gif" alt="Minecraft"><br><sub>Minecraft: Gathers wood and crafts a workbench as steps toward making a wooden pickaxe.</sub></td>
+    <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@b1cd0ed542d9e36e059966533f5b3e68d20da5d8/assets/demos/minecraft.gif" alt="Minecraft"><br><sub>Minecraft: Crafts a wooden pickaxe at a workbench to complete the gathering-and-crafting task.</sub></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="https://cdn.jsdelivr.net/gh/bigai-nlco/GS1@53ca99e8618b830efba6e9ed1ad87fdf0c61c9b2/assets/demos/google-flights.gif" alt="Google Flights"><br><sub>Google Flights: Compares routes and dates to plan a multi-stop trip.</sub></td>
